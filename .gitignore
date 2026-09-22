@@ -1,0 +1,16 @@
+# IDEs
+.idea/
+**/.idea/
+*.iml
+
+# Build
+target/
+**/target/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment / local configuration
+.env
+**/.env
