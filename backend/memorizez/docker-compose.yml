@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: memorizez-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: memorizez
+      POSTGRES_USER: memorizez
+      POSTGRES_PASSWORD: memorizez
+    ports:
+      - "5432:5432"
+    volumes:
+      - memorizez-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  memorizez-postgres-data:
