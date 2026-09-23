@@ -4,9 +4,9 @@ services:
     container_name: memorizez-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: memorizez
-      POSTGRES_USER: memorizez
-      POSTGRES_PASSWORD: memorizez
+      POSTGRES_DB: ${MEMORIZEZ_DB_NAME}
+      POSTGRES_USER: ${MEMORIZEZ_DB_USER}
+      POSTGRES_PASSWORD: ${MEMORIZEZ_DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
