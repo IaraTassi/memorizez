@@ -22,7 +22,7 @@ public class CardController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> create(@Valid @RequestBody @PathVariable String collectionId, CreateCardRequest request, Authentication authentication) {
+    public ResponseEntity<Void> create(@PathVariable String collectionId, @Valid @RequestBody CreateCardRequest request, Authentication authentication) {
 
         cardService.create(collectionId, request, authentication);
 
