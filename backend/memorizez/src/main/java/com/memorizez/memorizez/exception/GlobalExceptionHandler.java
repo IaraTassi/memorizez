@@ -23,4 +23,16 @@ public class GlobalExceptionHandler {
     public void handlePasswordMismatch() {
 
     }
+
+    @ExceptionHandler(CardNotRevealedException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public void handleCardNotRevealed() {
+
+    }
+
+    @ExceptionHandler(CardNotAvailableForReviewException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public void handleCardNotAvailableForReview() {
+
+    }
 }

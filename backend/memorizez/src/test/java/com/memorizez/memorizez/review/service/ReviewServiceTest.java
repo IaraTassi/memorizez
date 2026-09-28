@@ -1,4 +1,4 @@
-package com.memorizez.memorizez.review;
+package com.memorizez.memorizez.review.service;
 
 import com.memorizez.memorizez.card.Card;
 import com.memorizez.memorizez.card.exception.CardNotFoundException;
@@ -6,13 +6,15 @@ import com.memorizez.memorizez.card.repository.CardRepository;
 import com.memorizez.memorizez.collection.Collection;
 import com.memorizez.memorizez.collection.exeption.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
+import com.memorizez.memorizez.review.Review;
+import com.memorizez.memorizez.review.ReviewResult;
+import com.memorizez.memorizez.review.ReviewStage;
 import com.memorizez.memorizez.review.dto.ReviewResponse;
 import com.memorizez.memorizez.review.dto.ReviewResultRequest;
 import com.memorizez.memorizez.review.dto.ReviewResultResponse;
 import com.memorizez.memorizez.review.exception.CardNotAvailableForReviewException;
 import com.memorizez.memorizez.review.exception.CardNotRevealedException;
 import com.memorizez.memorizez.review.repository.ReviewRepository;
-import com.memorizez.memorizez.review.service.ReviewService;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
@@ -1574,4 +1576,106 @@ public class ReviewServiceTest {
         verify(reviewRepository)
                 .findByCard(nextCard);
     }
+
+    @Test
+    void shouldCompleteReviewWhenNoCardsAreAvailableAfterSubmittingResult() {
+
+        UserRepository userRepository = mock(UserRepository.class);
+        CollectionRepository collectionRepository = mock(CollectionRepository.class);
+        CardRepository cardRepository = mock(CardRepository.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        Authentication authentication = mock(Authentication.class);
+
+        User user = new User(
+                "Test User",
+                "test@memorizez.com",
+                "hashed-password"
+        );
+
+        Collection collection = new Collection();
+        collection.setName("Inglês");
+        collection.setUser(user);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        Card card = new Card();
+        card.setFront("What is encapsulation?");
+        card.setBack("O que é encapsulamento");
+        card.setNotes("Princípio da POO.");
+        card.setCollection(collection);
+
+        Review review = new Review();
+        review.setCard(card);
+        review.setStage(ReviewStage.SEVEN_DAYS);
+        review.setNextReviewDate(LocalDate.now());
+        review.setRevealedAt(LocalDateTime.now());
+
+        ReviewResultRequest request = new ReviewResultRequest();
+        request.setResult(ReviewResult.REMEMBERED);
+
+        when(authentication.getName())
+                .thenReturn("test@memorizez.com");
+
+        when(userRepository.findByEmail("test@memorizez.com"))
+                .thenReturn(Optional.of(user));
+
+        when(collectionRepository.findByIdAndUser(collectionId, user))
+                .thenReturn(Optional.of(collection));
+
+        when(cardRepository.findByIdAndCollection(cardId, collection))
+                .thenReturn(Optional.of(card));
+
+        when(reviewRepository.findByCard(card))
+                .thenReturn(Optional.of(review));
+
+        when(cardRepository.findAvailableForReview(user, LocalDate.now()))
+                .thenReturn(List.of());
+
+        ReviewService service =
+                new ReviewService(
+                        reviewRepository,
+                        cardRepository,
+                        collectionRepository,
+                        userRepository
+                );
+
+        ReviewResultResponse response =
+                service.submitResult(
+                        collectionId,
+                        cardId,
+                        request,
+                        authentication
+                );
+
+        assertTrue(response.isCompleted());
+        assertNull(response.getNextCard());
+
+        assertEquals(1, card.getRememberedCount());
+
+        assertEquals(
+                ReviewStage.FIFTEEN_DAYS,
+                review.getStage()
+        );
+
+        assertEquals(
+                LocalDate.now().plusDays(15),
+                review.getNextReviewDate()
+        );
+
+        assertNull(review.getRevealedAt());
+
+        verify(reviewRepository)
+                .save(review);
+
+        verify(cardRepository)
+                .save(card);
+
+        verify(cardRepository)
+                .findAvailableForReview(
+                        user,
+                        LocalDate.now()
+                );
+    }
+
 }
