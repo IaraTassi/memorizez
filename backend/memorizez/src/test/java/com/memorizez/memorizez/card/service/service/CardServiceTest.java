@@ -83,8 +83,8 @@ public class CardServiceTest {
         assertEquals("Inheritance allows a class to reuse attributes and methods from another class.", card.getNotes());
         assertEquals(collection, card.getCollection());
 
-        assertEquals(0, card.getCorrectCount());
-        assertEquals(0, card.getWrongCount());
+        assertEquals(0, card.getRememberedCount());
+        assertEquals(0, card.getNotRememberedCount());
         assertEquals(0, card.getEditCount());
     }
 
@@ -203,9 +203,9 @@ public class CardServiceTest {
         card1.setNotes("Encapsulation hides internal details.");
         card1.setCollection(collection);
 
-        card1.incrementCorrectCount();
-        card1.incrementCorrectCount();
-        card1.incrementWrongCount();
+        card1.incrementRememberedCount();
+        card1.incrementRememberedCount();
+        card1.incrementNotRememberedCount();
         card1.incrementEditCount();
         card1.incrementEditCount();
         card1.incrementEditCount();
@@ -216,11 +216,11 @@ public class CardServiceTest {
         card2.setNotes("Inheritance allows code reuse.");
         card2.setCollection(collection);
 
-        card2.incrementCorrectCount();
-        card2.incrementCorrectCount();
-        card2.incrementCorrectCount();
-        card2.incrementCorrectCount();
-        card2.incrementCorrectCount();
+        card2.incrementRememberedCount();
+        card2.incrementRememberedCount();
+        card2.incrementRememberedCount();
+        card2.incrementRememberedCount();
+        card2.incrementRememberedCount();
         card2.incrementEditCount();
 
         Pageable pageable = PageRequest.of(0, 20);
@@ -259,12 +259,12 @@ public class CardServiceTest {
         verify(cardRepository)
                 .findAllByCollectionOrderByFrontAsc(collection, pageable);
 
-        assertEquals(2, response.getContent().get(0).getCorrectCount());
-        assertEquals(1, response.getContent().get(0).getWrongCount());
+        assertEquals(2, response.getContent().get(0).getRememberedCount());
+        assertEquals(1, response.getContent().get(0).getNotRememberedCount());
         assertEquals(3, response.getContent().get(0).getEditCount());
 
-        assertEquals(5, response.getContent().get(1).getCorrectCount());
-        assertEquals(0, response.getContent().get(1).getWrongCount());
+        assertEquals(5, response.getContent().get(1).getRememberedCount());
+        assertEquals(0, response.getContent().get(1).getNotRememberedCount());
         assertEquals(1, response.getContent().get(1).getEditCount());
     }
 

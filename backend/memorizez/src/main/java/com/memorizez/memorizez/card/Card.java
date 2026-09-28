@@ -27,10 +27,10 @@ public class Card {
     private LocalDate createdAt;
 
     @Column(nullable = false)
-    private int correctCount = 0;
+    private int rememberedCount = 0;
 
     @Column(nullable = false)
-    private int wrongCount = 0;
+    private int notRememberedCount = 0;
 
     @Column(nullable = false)
     private int editCount = 0;
@@ -90,24 +90,24 @@ public class Card {
         this.collection = collection;
     }
 
-    public int getCorrectCount() {
-        return correctCount;
+    public int getRememberedCount() {
+        return rememberedCount;
     }
 
-    public int getWrongCount() {
-        return wrongCount;
+    public int getNotRememberedCount() {
+        return notRememberedCount;
     }
 
     public int getEditCount() {
         return editCount;
     }
 
-    public void incrementCorrectCount() {
-        correctCount++;
+    public void incrementRememberedCount() {
+        rememberedCount++;
     }
 
-    public void incrementWrongCount() {
-        wrongCount++;
+    public void incrementNotRememberedCount() {
+        notRememberedCount++;
     }
 
     public void incrementEditCount() {

@@ -88,8 +88,8 @@ public class CardService {
                         card.getBack(),
                         card.getNotes(),
                         card.getCreatedAt(),
-                        card.getCorrectCount(),
-                        card.getWrongCount(),
+                        card.getRememberedCount(),
+                        card.getNotRememberedCount(),
                         card.getEditCount())
 
         );

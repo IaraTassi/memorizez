@@ -9,18 +9,27 @@ public class CardResponse {
     private String back;
     private String notes;
     private LocalDate createdAt;
-    private Integer correctCount;
-    private Integer wrongCount;
+    private Integer rememberedCount;
+    private Integer notRememberedCount;
     private Integer editCount;
 
-    public CardResponse(String id, String front, String back, String notes, LocalDate createdAt, Integer correctCount, Integer wrongCount, Integer editCount) {
+    public CardResponse(
+            String id,
+            String front,
+            String back,
+            String notes,
+            LocalDate createdAt,
+            Integer rememberedCount,
+            Integer notRememberedCount,
+            Integer editCount) {
+
         this.id = id;
         this.front = front;
         this.back = back;
         this.notes = notes;
         this.createdAt = createdAt;
-        this.correctCount = correctCount;
-        this.wrongCount = wrongCount;
+        this.rememberedCount = rememberedCount;
+        this.notRememberedCount = notRememberedCount;
         this.editCount = editCount;
     }
 
@@ -44,12 +53,12 @@ public class CardResponse {
         return createdAt;
     }
 
-    public Integer getCorrectCount() {
-        return correctCount;
+    public Integer getRememberedCount() {
+        return rememberedCount;
     }
 
-    public Integer getWrongCount() {
-        return wrongCount;
+    public Integer getNotRememberedCount() {
+        return notRememberedCount;
     }
 
     public Integer getEditCount() {
