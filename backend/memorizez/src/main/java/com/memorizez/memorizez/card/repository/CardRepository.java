@@ -25,6 +25,10 @@ public interface CardRepository extends JpaRepository<Card, String> {
             Collection collection
     );
 
+    List<Card> findAllByCollection(Collection collection);
+
+    long countByCollection(Collection collection);
+
     @Query("""
     SELECT c
     FROM Card c

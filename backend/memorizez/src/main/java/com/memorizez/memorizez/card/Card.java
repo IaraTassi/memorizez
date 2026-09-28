@@ -26,6 +26,15 @@ public class Card {
     @Column(nullable = false)
     private LocalDate createdAt;
 
+    @Column(nullable = false)
+    private int correctCount = 0;
+
+    @Column(nullable = false)
+    private int wrongCount = 0;
+
+    @Column(nullable = false)
+    private int editCount = 0;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "collection_id", nullable = false)
     private Collection collection;
@@ -79,5 +88,29 @@ public class Card {
 
     public void setCollection(Collection collection) {
         this.collection = collection;
+    }
+
+    public int getCorrectCount() {
+        return correctCount;
+    }
+
+    public int getWrongCount() {
+        return wrongCount;
+    }
+
+    public int getEditCount() {
+        return editCount;
+    }
+
+    public void incrementCorrectCount() {
+        correctCount++;
+    }
+
+    public void incrementWrongCount() {
+        wrongCount++;
+    }
+
+    public void incrementEditCount() {
+        editCount++;
     }
 }
