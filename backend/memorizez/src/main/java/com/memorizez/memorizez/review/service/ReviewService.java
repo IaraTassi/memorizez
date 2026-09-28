@@ -11,6 +11,7 @@ import com.memorizez.memorizez.review.ReviewResult;
 import com.memorizez.memorizez.review.ReviewStage;
 import com.memorizez.memorizez.review.dto.ReviewResponse;
 import com.memorizez.memorizez.review.dto.ReviewResultRequest;
+import com.memorizez.memorizez.review.dto.ReviewResultResponse;
 import com.memorizez.memorizez.review.exception.CardNotAvailableForReviewException;
 import com.memorizez.memorizez.review.exception.CardNotRevealedException;
 import com.memorizez.memorizez.review.repository.ReviewRepository;
@@ -131,7 +132,7 @@ public class ReviewService {
     }
 
     @Transactional
-    public void submitResult(
+    public ReviewResultResponse submitResult(
             String collectionId,
             String cardId,
             ReviewResultRequest request,
@@ -195,5 +196,34 @@ public class ReviewService {
 
         reviewRepository.save(review);
         cardRepository.save(card);
+
+        List<Card> nextCards = cardRepository.findAvailableForReview(
+                user,
+                LocalDate.now()
+        );
+
+        if (nextCards.isEmpty()) {
+            return new ReviewResultResponse(true, null);
+        }
+
+        Card nextCard = nextCards.get(0);
+
+        Review nextReview = reviewRepository
+                .findByCard(nextCard)
+                .orElse(null);
+
+        ReviewResponse nextCardResponse = new ReviewResponse(
+                nextCard.getId(),
+                nextCard.getFront(),
+                null,
+                null,
+                nextReview != null ? nextReview.getStage() : null,
+                nextReview != null ? nextReview.getNextReviewDate() : null
+        );
+
+        return new ReviewResultResponse(
+                false,
+                nextCardResponse
+        );
     }
 }

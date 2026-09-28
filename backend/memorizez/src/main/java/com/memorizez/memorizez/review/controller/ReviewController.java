@@ -2,6 +2,7 @@ package com.memorizez.memorizez.review.controller;
 
 import com.memorizez.memorizez.review.dto.ReviewResponse;
 import com.memorizez.memorizez.review.dto.ReviewResultRequest;
+import com.memorizez.memorizez.review.dto.ReviewResultResponse;
 import com.memorizez.memorizez.review.service.ReviewService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -45,19 +46,20 @@ public class ReviewController {
     }
 
     @PostMapping("/collections/{collectionId}/cards/{cardId}/result")
-    public ResponseEntity<Void> submitResult(
-            @PathVariable String collectionId,
-            @PathVariable String cardId,
+    public ResponseEntity<ReviewResultResponse> submitResult(
+            @PathVariable("collectionId") String collectionId,
+            @PathVariable("cardId") String cardId,
             @Valid @RequestBody ReviewResultRequest request,
             Authentication authentication) {
 
-        reviewService.submitResult(
-                collectionId,
-                cardId,
-                request,
-                authentication
-        );
+        ReviewResultResponse response =
+                reviewService.submitResult(
+                        collectionId,
+                        cardId,
+                        request,
+                        authentication
+                );
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(response);
     }
 }

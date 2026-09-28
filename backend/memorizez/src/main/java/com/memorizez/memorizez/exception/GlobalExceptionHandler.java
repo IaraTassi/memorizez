@@ -1,5 +1,7 @@
 package com.memorizez.memorizez.exception;
 
+import com.memorizez.memorizez.review.exception.CardNotAvailableForReviewException;
+import com.memorizez.memorizez.review.exception.CardNotRevealedException;
 import com.memorizez.memorizez.user.exception.EmailAlreadyRegisteredException;
 import com.memorizez.memorizez.user.exception.PasswordMismatchException;
 import org.springframework.http.HttpStatus;
