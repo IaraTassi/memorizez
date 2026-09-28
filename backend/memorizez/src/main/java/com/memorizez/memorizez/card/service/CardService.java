@@ -95,6 +95,7 @@ public class CardService {
         );
     }
 
+    @Transactional
     public void update(
             String collectionId,
             String cardId,
@@ -106,11 +107,14 @@ public class CardService {
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         Collection collection = collectionRepository
-                .findByIdAndUser(collectionId, user).orElseThrow(() -> new CollectionNotFoundException("Collection not found"));
+                .findByIdAndUser(collectionId, user)
+                .orElseThrow(() ->
+                        new CollectionNotFoundException("Collection not found"));
 
         Card card = cardRepository
                 .findByIdAndCollection(cardId, collection)
-                .orElseThrow(() -> new CardNotFoundException("Card not found"));
+                .orElseThrow(() ->
+                        new CardNotFoundException("Card not found"));
 
         card.setFront(request.getFront());
         card.setBack(request.getBack());
@@ -132,6 +136,8 @@ public class CardService {
                         )
                 );
             }
+
+            reviewRepository.save(review);
         }
 
         cardRepository.save(card);

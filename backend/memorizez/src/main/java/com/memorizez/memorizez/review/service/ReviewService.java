@@ -166,20 +166,22 @@ public class ReviewService {
             );
         }
 
-        if (review.getStage() == null) {
-            review.setStage(ReviewStage.ONE_DAY);
+        if (request.getResult() == ReviewResult.REMEMBERED) {
 
-        } else if (request.getResult() == ReviewResult.REMEMBERED) {
+            card.incrementRememberedCount();
 
-            ReviewStage currentStage = review.getStage();
+            if (review.getStage() == null) {
+                review.setStage(ReviewStage.ONE_DAY);
 
-            if (currentStage != ReviewStage.THIRTY_DAYS) {
+            } else if (review.getStage() != ReviewStage.THIRTY_DAYS) {
                 review.setStage(
-                        ReviewStage.values()[currentStage.ordinal() + 1]
+                        ReviewStage.values()[review.getStage().ordinal() + 1]
                 );
             }
 
         } else {
+
+            card.incrementNotRememberedCount();
             review.setStage(ReviewStage.ONE_DAY);
         }
 
@@ -192,5 +194,6 @@ public class ReviewService {
         review.setRevealedAt(null);
 
         reviewRepository.save(review);
+        cardRepository.save(card);
     }
 }

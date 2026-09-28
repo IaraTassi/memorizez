@@ -11,7 +11,11 @@ import com.memorizez.memorizez.collection.Collection;
 import com.memorizez.memorizez.collection.exeption.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
 import com.memorizez.memorizez.review.Review;
+import com.memorizez.memorizez.review.ReviewResult;
+import com.memorizez.memorizez.review.ReviewStage;
+import com.memorizez.memorizez.review.dto.ReviewResultRequest;
 import com.memorizez.memorizez.review.repository.ReviewRepository;
+import com.memorizez.memorizez.review.service.ReviewService;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
@@ -23,11 +27,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class CardServiceTest {
@@ -417,6 +422,275 @@ public class CardServiceTest {
 
         assertEquals(1, updatedCard.getEditCount());
 
+    }
+
+    @Test
+    void shouldUpdateCardAndResetReviewSuccessfully() {
+
+        UserRepository userRepository = mock(UserRepository.class);
+        CollectionRepository collectionRepository = mock(CollectionRepository.class);
+        CardRepository cardRepository = mock(CardRepository.class);
+        Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
+
+        User user = new User(
+                "Test User",
+                "test@memorizez.com",
+                "hashed-password"
+        );
+
+        Collection collection = new Collection();
+        collection.setName("Inglês");
+        collection.setUser(user);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        Card card = new Card();
+        card.setFront("What is encapsulation?");
+        card.setBack("O que é encapsulamento");
+        card.setNotes("Princípio da POO.");
+        card.setCollection(collection);
+
+        Review review = new Review();
+        review.setCard(card);
+        review.setStage(ReviewStage.SEVEN_DAYS);
+        review.setNextReviewDate(LocalDate.now().plusDays(7));
+        review.setRevealedAt(LocalDateTime.now());
+
+        when(authentication.getName())
+                .thenReturn("test@memorizez.com");
+
+        when(userRepository.findByEmail("test@memorizez.com"))
+                .thenReturn(Optional.of(user));
+
+        when(collectionRepository.findByIdAndUser(collectionId, user))
+                .thenReturn(Optional.of(collection));
+
+        when(cardRepository.findByIdAndCollection(cardId, collection))
+                .thenReturn(Optional.of(card));
+
+        when(reviewRepository.findByCard(card))
+                .thenReturn(Optional.of(review));
+
+        UpdateCardRequest request = new UpdateCardRequest();
+        request.setFront("What is inheritance in OOP?");
+        request.setBack("What is inheritance in object-oriented programming?");
+        request.setNotes("Inheritance allows code reuse.");
+
+        CardService service =
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
+
+        service.update(collectionId, cardId, request, authentication);
+
+        assertEquals(
+                "What is inheritance in OOP?",
+                card.getFront()
+        );
+        assertEquals(
+                "What is inheritance in object-oriented programming?",
+                card.getBack()
+        );
+        assertEquals(
+                "Inheritance allows code reuse.",
+                card.getNotes()
+        );
+
+        assertEquals(1, card.getEditCount());
+
+        assertEquals(
+                ReviewStage.ONE_DAY,
+                review.getStage()
+        );
+
+        assertEquals(
+                LocalDate.now().plusDays(1),
+                review.getNextReviewDate()
+        );
+
+        assertNull(review.getRevealedAt());
+
+        verify(reviewRepository)
+                .findByCard(card);
+
+        verify(reviewRepository)
+                .save(review);
+
+        verify(cardRepository)
+                .save(card);
+    }
+
+    @Test
+    void shouldIncrementRememberedCountWhenUserRemembersCard() {
+
+        UserRepository userRepository = mock(UserRepository.class);
+        CollectionRepository collectionRepository = mock(CollectionRepository.class);
+        CardRepository cardRepository = mock(CardRepository.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        Authentication authentication = mock(Authentication.class);
+
+        User user = new User(
+                "Test User",
+                "test@memorizez.com",
+                "hashed-password"
+        );
+
+        Collection collection = new Collection();
+        collection.setName("Inglês");
+        collection.setUser(user);
+
+        Card card = new Card();
+        card.setFront("What is encapsulation?");
+        card.setBack("O que é encapsulamento");
+        card.setCollection(collection);
+
+        Review review = new Review();
+        review.setCard(card);
+        review.setStage(ReviewStage.ONE_DAY);
+        review.setNextReviewDate(LocalDate.now().plusDays(1));
+        review.setRevealedAt(LocalDateTime.now());
+
+        ReviewResultRequest request = new ReviewResultRequest();
+        request.setResult(ReviewResult.REMEMBERED);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        when(authentication.getName())
+                .thenReturn("test@memorizez.com");
+
+        when(userRepository.findByEmail("test@memorizez.com"))
+                .thenReturn(Optional.of(user));
+
+        when(collectionRepository.findByIdAndUser(collectionId, user))
+                .thenReturn(Optional.of(collection));
+
+        when(cardRepository.findByIdAndCollection(cardId, collection))
+                .thenReturn(Optional.of(card));
+
+        when(reviewRepository.findByCard(card))
+                .thenReturn(Optional.of(review));
+
+        ReviewService service =
+                new ReviewService(
+                        reviewRepository,
+                        cardRepository,
+                        collectionRepository,
+                        userRepository
+                );
+
+        service.submitResult(
+                collectionId,
+                cardId,
+                request,
+                authentication
+        );
+
+        assertEquals(1, card.getRememberedCount());
+        assertEquals(0, card.getNotRememberedCount());
+
+        assertEquals(ReviewStage.SEVEN_DAYS, review.getStage());
+        assertEquals(
+                LocalDate.now().plusDays(7),
+                review.getNextReviewDate()
+        );
+        assertNull(review.getRevealedAt());
+
+        verify(cardRepository)
+                .save(card);
+
+        verify(reviewRepository)
+                .save(review);
+    }
+
+    @Test
+    void shouldIncrementNotRememberedCountWhenUserDoesNotRememberCard() {
+
+        UserRepository userRepository = mock(UserRepository.class);
+        CollectionRepository collectionRepository = mock(CollectionRepository.class);
+        CardRepository cardRepository = mock(CardRepository.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        Authentication authentication = mock(Authentication.class);
+
+        User user = new User(
+                "Test User",
+                "test@memorizez.com",
+                "hashed-password"
+        );
+
+        Collection collection = new Collection();
+        collection.setName("Inglês");
+        collection.setUser(user);
+
+        Card card = new Card();
+        card.setFront("What is encapsulation?");
+        card.setBack("O que é encapsulamento");
+        card.setCollection(collection);
+
+        Review review = new Review();
+        review.setCard(card);
+        review.setStage(ReviewStage.SEVEN_DAYS);
+        review.setNextReviewDate(LocalDate.now().plusDays(7));
+        review.setRevealedAt(LocalDateTime.now());
+
+        ReviewResultRequest request = new ReviewResultRequest();
+        request.setResult(ReviewResult.NOT_REMEMBERED);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        when(authentication.getName())
+                .thenReturn("test@memorizez.com");
+
+        when(userRepository.findByEmail("test@memorizez.com"))
+                .thenReturn(Optional.of(user));
+
+        when(collectionRepository.findByIdAndUser(collectionId, user))
+                .thenReturn(Optional.of(collection));
+
+        when(cardRepository.findByIdAndCollection(cardId, collection))
+                .thenReturn(Optional.of(card));
+
+        when(reviewRepository.findByCard(card))
+                .thenReturn(Optional.of(review));
+
+        ReviewService service =
+                new ReviewService(
+                        reviewRepository,
+                        cardRepository,
+                        collectionRepository,
+                        userRepository
+                );
+
+        service.submitResult(
+                collectionId,
+                cardId,
+                request,
+                authentication
+        );
+
+        assertEquals(0, card.getRememberedCount());
+        assertEquals(1, card.getNotRememberedCount());
+
+        assertEquals(ReviewStage.ONE_DAY, review.getStage());
+
+        assertEquals(
+                LocalDate.now().plusDays(1),
+                review.getNextReviewDate()
+        );
+
+        assertNull(review.getRevealedAt());
+
+        verify(cardRepository)
+                .save(card);
+
+        verify(reviewRepository)
+                .save(review);
     }
 
     @Test
