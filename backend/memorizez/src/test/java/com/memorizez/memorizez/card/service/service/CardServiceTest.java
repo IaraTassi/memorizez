@@ -10,6 +10,8 @@ import com.memorizez.memorizez.card.service.CardService;
 import com.memorizez.memorizez.collection.Collection;
 import com.memorizez.memorizez.collection.exeption.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
+import com.memorizez.memorizez.review.Review;
+import com.memorizez.memorizez.review.repository.ReviewRepository;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
@@ -36,6 +38,7 @@ public class CardServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User("Test User", "test@memorizez.com", "hashed-password");
 
@@ -60,7 +63,12 @@ public class CardServiceTest {
         request.setNotes("Inheritance allows a class to reuse attributes and methods from another class.");
 
         CardService service =
-                new CardService(cardRepository, collectionRepository, userRepository);
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                        );
 
         service.create(collectionId, request, authentication);
 
@@ -75,6 +83,9 @@ public class CardServiceTest {
         assertEquals("Inheritance allows a class to reuse attributes and methods from another class.", card.getNotes());
         assertEquals(collection, card.getCollection());
 
+        assertEquals(0, card.getCorrectCount());
+        assertEquals(0, card.getWrongCount());
+        assertEquals(0, card.getEditCount());
     }
 
     @Test
@@ -83,6 +94,7 @@ public class CardServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -97,7 +109,13 @@ public class CardServiceTest {
         request.setBack("What is inheritance in object-oriented programming?");
         request.setNotes("Inheritance allows a class to reuse attributes and methods from another class.");
 
-        CardService service = new CardService(cardRepository, collectionRepository, userRepository);
+        CardService service =
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                        );
 
         assertThrows(UserNotFoundException.class, () -> service.create(collectionId, request, authentication));
 
@@ -114,6 +132,7 @@ public class CardServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -138,7 +157,12 @@ public class CardServiceTest {
         request.setNotes("Inheritance allows code reuse.");
 
         CardService service =
-                new CardService(cardRepository, collectionRepository, userRepository);
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
 
         assertThrows(
                 CollectionNotFoundException.class,
@@ -159,6 +183,7 @@ public class CardServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -178,11 +203,25 @@ public class CardServiceTest {
         card1.setNotes("Encapsulation hides internal details.");
         card1.setCollection(collection);
 
+        card1.incrementCorrectCount();
+        card1.incrementCorrectCount();
+        card1.incrementWrongCount();
+        card1.incrementEditCount();
+        card1.incrementEditCount();
+        card1.incrementEditCount();
+
         Card card2 = new Card();
         card2.setFront("What is inheritance in OOP?");
         card2.setBack("What is inheritance in object-oriented programming?");
         card2.setNotes("Inheritance allows code reuse.");
         card2.setCollection(collection);
+
+        card2.incrementCorrectCount();
+        card2.incrementCorrectCount();
+        card2.incrementCorrectCount();
+        card2.incrementCorrectCount();
+        card2.incrementCorrectCount();
+        card2.incrementEditCount();
 
         Pageable pageable = PageRequest.of(0, 20);
 
@@ -201,7 +240,12 @@ public class CardServiceTest {
                 .thenReturn(cards);
 
         CardService service =
-                new CardService(cardRepository, collectionRepository, userRepository);
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
 
         Page<CardResponse> response =
                 service.findAll(collectionId, pageable, authentication);
@@ -214,6 +258,14 @@ public class CardServiceTest {
 
         verify(cardRepository)
                 .findAllByCollectionOrderByFrontAsc(collection, pageable);
+
+        assertEquals(2, response.getContent().get(0).getCorrectCount());
+        assertEquals(1, response.getContent().get(0).getWrongCount());
+        assertEquals(3, response.getContent().get(0).getEditCount());
+
+        assertEquals(5, response.getContent().get(1).getCorrectCount());
+        assertEquals(0, response.getContent().get(1).getWrongCount());
+        assertEquals(1, response.getContent().get(1).getEditCount());
     }
 
     @Test
@@ -222,6 +274,7 @@ public class CardServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -233,7 +286,13 @@ public class CardServiceTest {
 
         Pageable pageable = PageRequest.of(0, 20);
 
-        CardService service = new CardService(cardRepository, collectionRepository, userRepository);
+        CardService service =
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
 
         assertThrows(UserNotFoundException.class, () -> service.findAll(collectionId, pageable, authentication));
 
@@ -249,6 +308,7 @@ public class CardServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -269,7 +329,12 @@ public class CardServiceTest {
                 .thenReturn(Optional.empty());
 
         CardService service =
-                new CardService(cardRepository, collectionRepository, userRepository);
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
 
         assertThrows(
                 CollectionNotFoundException.class,
@@ -286,6 +351,7 @@ public class CardServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -324,7 +390,12 @@ public class CardServiceTest {
         request.setNotes("");
 
         CardService service =
-                new CardService(cardRepository, collectionRepository, userRepository);
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
 
         service.update(collectionId, cardId, request, authentication);
 
@@ -344,6 +415,8 @@ public class CardServiceTest {
         assertEquals("", updatedCard.getNotes());
         assertEquals(collection, updatedCard.getCollection());
 
+        assertEquals(1, updatedCard.getEditCount());
+
     }
 
     @Test
@@ -352,6 +425,7 @@ public class CardServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -368,7 +442,12 @@ public class CardServiceTest {
         request.setNotes("");
 
         CardService service =
-                new CardService(cardRepository, collectionRepository, userRepository);
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
 
         assertThrows(
                 UserNotFoundException.class,
@@ -391,6 +470,7 @@ public class CardServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -416,7 +496,12 @@ public class CardServiceTest {
         request.setNotes("");
 
         CardService service =
-                new CardService(cardRepository, collectionRepository, userRepository);
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
 
         assertThrows(
                 CollectionNotFoundException.class,
@@ -436,6 +521,7 @@ public class CardServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -468,7 +554,12 @@ public class CardServiceTest {
         request.setNotes("");
 
         CardService service =
-                new CardService(cardRepository, collectionRepository, userRepository);
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
 
         assertThrows(
                 CardNotFoundException.class,
@@ -483,11 +574,75 @@ public class CardServiceTest {
     }
 
     @Test
+    void shouldDeleteCardSuccessfully() {
+        UserRepository userRepository = mock(UserRepository.class);
+        CollectionRepository collectionRepository = mock(CollectionRepository.class);
+        CardRepository cardRepository = mock(CardRepository.class);
+        Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
+
+        User user = new User(
+                "Test User",
+                "test@memorizez.com",
+                "hashed-password"
+        );
+
+        Collection collection = new Collection();
+        collection.setName("Inglês");
+        collection.setUser(user);
+
+        Card card = new Card();
+        card.setFront("What is encapsulation?");
+        card.setBack("O que is encapsulamento");
+        card.setNotes("Princípio da POO.");
+        card.setCollection(collection);
+
+        Review review = new Review();
+        review.setCard(card);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        when(authentication.getName())
+                .thenReturn("test@memorizez.com");
+
+        when(userRepository.findByEmail("test@memorizez.com"))
+                .thenReturn(Optional.of(user));
+
+        when(collectionRepository.findByIdAndUser(collectionId, user))
+                .thenReturn(Optional.of(collection));
+
+        when(cardRepository.findByIdAndCollection(cardId, collection))
+                .thenReturn(Optional.of(card));
+
+        when(reviewRepository.findByCard(card))
+                .thenReturn(Optional.of(review));
+
+        CardService service =
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
+
+        service.delete(collectionId, cardId, authentication);
+
+        verify(reviewRepository)
+                .findByCard(card);
+        verify(reviewRepository)
+                .delete(review);
+        verify(cardRepository)
+                .delete(card);
+    }
+
+    @Test
     void shouldThrowExceptionWhenUserIsNotFoundInDelete() {
         UserRepository userRepository = mock(UserRepository.class);
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -499,7 +654,12 @@ public class CardServiceTest {
         String cardId = "card-1";
 
         CardService service =
-                new CardService(cardRepository, collectionRepository, userRepository);
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
 
         assertThrows(
                 UserNotFoundException.class,
@@ -522,6 +682,7 @@ public class CardServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -542,7 +703,12 @@ public class CardServiceTest {
                 .thenReturn(Optional.empty());
 
         CardService service =
-                new CardService(cardRepository, collectionRepository, userRepository);
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
 
         assertThrows(
                 CollectionNotFoundException.class,
@@ -562,6 +728,7 @@ public class CardServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -589,7 +756,12 @@ public class CardServiceTest {
                 .thenReturn(Optional.empty());
 
         CardService service =
-                new CardService(cardRepository, collectionRepository, userRepository);
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository
+                );
 
         assertThrows(
                 CardNotFoundException.class,

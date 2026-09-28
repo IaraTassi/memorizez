@@ -9,6 +9,8 @@ import com.memorizez.memorizez.card.repository.CardRepository;
 import com.memorizez.memorizez.collection.Collection;
 import com.memorizez.memorizez.collection.exeption.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
+import com.memorizez.memorizez.review.Review;
+import com.memorizez.memorizez.review.ReviewStage;
 import com.memorizez.memorizez.review.repository.ReviewRepository;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
@@ -17,6 +19,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 
 @Service
 public class CardService {
@@ -110,26 +115,50 @@ public class CardService {
         card.setFront(request.getFront());
         card.setBack(request.getBack());
         card.setNotes(request.getNotes());
+        card.incrementEditCount();
+
+        Review review = reviewRepository
+                .findByCard(card)
+                .orElse(null);
+
+        if (review != null) {
+            review.setRevealedAt(null);
+
+            if (review.getStage() != null) {
+                review.setStage(ReviewStage.ONE_DAY);
+                review.setNextReviewDate(
+                        LocalDate.now().plusDays(
+                                ReviewStage.ONE_DAY.getIntervalDays()
+                        )
+                );
+            }
+        }
 
         cardRepository.save(card);
     }
 
+    @Transactional
     public void delete(
             String collectionId,
             String cardId,
             Authentication authentication) {
 
-        User user = userRepository
-                .findByEmail(authentication.getName())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found"));
 
         Collection collection = collectionRepository
                 .findByIdAndUser(collectionId, user)
-                .orElseThrow(() -> new CollectionNotFoundException("Collection not found"));
+                .orElseThrow(() ->
+                        new CollectionNotFoundException("Collection not found"));
 
         Card card = cardRepository
                 .findByIdAndCollection(cardId, collection)
-                .orElseThrow(() -> new CardNotFoundException("Card not found"));
+                .orElseThrow(() ->
+                        new CardNotFoundException("Card not found"));
+
+        reviewRepository.findByCard(card)
+                .ifPresent(reviewRepository::delete);
 
         cardRepository.delete(card);
     }
