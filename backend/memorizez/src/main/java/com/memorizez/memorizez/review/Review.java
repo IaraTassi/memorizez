@@ -17,6 +17,7 @@ public class Review {
     @Enumerated(EnumType.STRING)
     private ReviewStage stage;
 
+    @Column(nullable = true)
     private LocalDate nextReviewDate;
 
     private LocalDateTime revealedAt;

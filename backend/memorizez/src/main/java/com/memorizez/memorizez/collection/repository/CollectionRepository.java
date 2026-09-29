@@ -11,5 +11,7 @@ public interface CollectionRepository extends JpaRepository<Collection, String> 
 
     List<Collection> findAllByUserOrderByCreatedAtDesc(User user);
 
+    List<Collection> findAllByUserOrderByCreatedAtAsc(User user);
+
     Optional<Collection> findByIdAndUser(String id, User user);
 }
