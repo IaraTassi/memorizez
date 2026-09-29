@@ -1,4 +1,4 @@
-package com.memorizez.memorizez.collection.exeption;
+package com.memorizez.memorizez.collection.exception;
 
 public class CollectionNotFoundException extends RuntimeException {
 

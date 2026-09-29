@@ -6,7 +6,7 @@ import com.memorizez.memorizez.collection.Collection;
 import com.memorizez.memorizez.collection.dto.CollectionResponse;
 import com.memorizez.memorizez.collection.dto.CreateCollectionRequest;
 import com.memorizez.memorizez.collection.dto.UpdateCollectionRequest;
-import com.memorizez.memorizez.collection.exeption.CollectionNotFoundException;
+import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
 import com.memorizez.memorizez.review.Review;
 import com.memorizez.memorizez.review.repository.ReviewRepository;

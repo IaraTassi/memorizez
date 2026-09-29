@@ -4,7 +4,7 @@ import com.memorizez.memorizez.card.Card;
 import com.memorizez.memorizez.card.exception.CardNotFoundException;
 import com.memorizez.memorizez.card.repository.CardRepository;
 import com.memorizez.memorizez.collection.Collection;
-import com.memorizez.memorizez.collection.exeption.CollectionNotFoundException;
+import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
 import com.memorizez.memorizez.freeStudy.dto.FreeStudyResponse;
 import com.memorizez.memorizez.user.User;
