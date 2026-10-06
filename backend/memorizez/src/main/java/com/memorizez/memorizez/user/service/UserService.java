@@ -4,7 +4,9 @@ import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.dto.RegisterUserRequest;
 import com.memorizez.memorizez.user.exception.EmailAlreadyRegisteredException;
 import com.memorizez.memorizez.user.exception.PasswordMismatchException;
+import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -37,5 +39,15 @@ public class UserService {
         );
 
         userRepository.save(user);
+    }
+
+    public void delete(Authentication authentication) {
+
+        User user = userRepository
+                .findByEmail(authentication.getName())
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found"));
+
+        userRepository.delete(user);
     }
 }

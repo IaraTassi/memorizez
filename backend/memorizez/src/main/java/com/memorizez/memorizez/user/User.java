@@ -1,6 +1,10 @@
 package com.memorizez.memorizez.user;
 
+import com.memorizez.memorizez.collection.Collection;
 import jakarta.persistence.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -18,6 +22,13 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true
+    )
+    private List<Collection> collections = new ArrayList<>();
 
     protected User() {
 

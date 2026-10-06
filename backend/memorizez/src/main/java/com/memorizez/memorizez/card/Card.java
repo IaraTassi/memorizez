@@ -1,10 +1,14 @@
 package com.memorizez.memorizez.card;
 
 import com.memorizez.memorizez.collection.Collection;
+import com.memorizez.memorizez.history.History;
+import com.memorizez.memorizez.review.Review;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -38,6 +42,20 @@ public class Card {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "collection_id", nullable = false)
     private Collection collection;
+
+    @OneToOne(
+            mappedBy = "card",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true
+    )
+    private Review review;
+
+    @OneToMany(
+            mappedBy = "card",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true
+    )
+    private List<History> histories = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

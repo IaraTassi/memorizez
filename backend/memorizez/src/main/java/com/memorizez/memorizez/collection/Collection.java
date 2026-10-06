@@ -1,9 +1,12 @@
 package com.memorizez.memorizez.collection;
 
+import com.memorizez.memorizez.card.Card;
 import com.memorizez.memorizez.user.User;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -22,6 +25,13 @@ public class Collection {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @OneToMany(
+            mappedBy = "collection",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true
+    )
+    private List<Card> cards = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
