@@ -9,6 +9,9 @@ import com.memorizez.memorizez.card.repository.CardRepository;
 import com.memorizez.memorizez.collection.Collection;
 import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
+import com.memorizez.memorizez.history.History;
+import com.memorizez.memorizez.history.HistoryAction;
+import com.memorizez.memorizez.history.repository.HistoryRepository;
 import com.memorizez.memorizez.review.Review;
 import com.memorizez.memorizez.review.ReviewStage;
 import com.memorizez.memorizez.review.repository.ReviewRepository;
@@ -22,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Service
 public class CardService {
@@ -30,17 +35,20 @@ public class CardService {
     private final CollectionRepository collectionRepository;
     private final UserRepository userRepository;
     private final ReviewRepository reviewRepository;
+    private final HistoryRepository historyRepository;
 
     public CardService(
             CardRepository cardRepository,
             CollectionRepository collectionRepository,
             UserRepository userRepository,
-            ReviewRepository reviewRepository) {
+            ReviewRepository reviewRepository,
+            HistoryRepository historyRepository) {
 
         this.cardRepository = cardRepository;
         this.collectionRepository = collectionRepository;
         this.userRepository = userRepository;
         this.reviewRepository = reviewRepository;
+        this.historyRepository = historyRepository;
     }
 
     public void create(
@@ -116,10 +124,32 @@ public class CardService {
                 .orElseThrow(() ->
                         new CardNotFoundException("Card not found"));
 
+        boolean frontChanged =
+                !Objects.equals(card.getFront(), request.getFront());
+
+        boolean backChanged =
+                !Objects.equals(card.getBack(), request.getBack());
+
+        boolean notesChanged =
+                !Objects.equals(card.getNotes(), request.getNotes());
+
+        if (!frontChanged && !backChanged && !notesChanged) {
+            return;
+        }
+
         card.setFront(request.getFront());
         card.setBack(request.getBack());
         card.setNotes(request.getNotes());
         card.incrementEditCount();
+
+        History history = new History(
+                null,
+                card,
+                HistoryAction.EDITED,
+                LocalDateTime.now()
+        );
+
+        historyRepository.save(history);
 
         Review review = reviewRepository
                 .findByCard(card)
@@ -149,7 +179,8 @@ public class CardService {
             String cardId,
             Authentication authentication) {
 
-        User user = userRepository.findByEmail(authentication.getName())
+        User user = userRepository
+                .findByEmail(authentication.getName())
                 .orElseThrow(() ->
                         new UserNotFoundException("User not found"));
 
@@ -162,9 +193,6 @@ public class CardService {
                 .findByIdAndCollection(cardId, collection)
                 .orElseThrow(() ->
                         new CardNotFoundException("Card not found"));
-
-        reviewRepository.findByCard(card)
-                .ifPresent(reviewRepository::delete);
 
         cardRepository.delete(card);
     }
