@@ -7,9 +7,9 @@ public class CollectionResponse {
     private String id;
     private String name;
     private LocalDate createdAt;
-    private Integer cardCount;
+    private long cardCount;
 
-    public CollectionResponse(String id, String name, LocalDate createdAt, Integer cardCount) {
+    public CollectionResponse(String id, String name, LocalDate createdAt, long cardCount) {
         this.id = id;
         this.name = name;
         this.createdAt = createdAt;
@@ -28,7 +28,7 @@ public class CollectionResponse {
         return createdAt;
     }
 
-    public Integer getCardCount() {
+    public long getCardCount() {
         return cardCount;
     }
 }

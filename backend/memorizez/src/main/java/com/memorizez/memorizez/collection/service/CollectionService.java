@@ -24,16 +24,15 @@ public class CollectionService {
     private final CollectionRepository collectionRepository;
     private final UserRepository userRepository;
     private final CardRepository cardRepository;
-    private final ReviewRepository reviewRepository;
+
 
     public CollectionService(
             CollectionRepository collectionRepository,
-            UserRepository userRepository, CardRepository cardRepository, ReviewRepository reviewRepository) {
+            UserRepository userRepository, CardRepository cardRepository) {
 
         this.collectionRepository = collectionRepository;
         this.userRepository = userRepository;
         this.cardRepository = cardRepository;
-        this.reviewRepository = reviewRepository;
     }
 
     public void create(
@@ -62,9 +61,7 @@ public class CollectionService {
                         collection.getId(),
                         collection.getName(),
                         collection.getCreatedAt(),
-                        Math.toIntExact(
-                                cardRepository.countByCollection(collection)
-                        )
+                        cardRepository.countByCollection(collection)
                 ))
                 .toList();
     }
@@ -85,22 +82,15 @@ public class CollectionService {
             String id,
             Authentication authentication) {
 
-        User user = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        User user = userRepository
+                .findByEmail(authentication.getName())
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found"));
 
         Collection collection = collectionRepository
                 .findByIdAndUser(id, user)
                 .orElseThrow(() ->
                         new CollectionNotFoundException("Collection not found"));
-
-        List<Card> cards = cardRepository.findAllByCollection(collection);
-
-        for (Card card : cards) {
-            reviewRepository.findByCard(card)
-                    .ifPresent(reviewRepository::delete);
-
-            cardRepository.delete(card);
-        }
 
         collectionRepository.delete(collection);
     }

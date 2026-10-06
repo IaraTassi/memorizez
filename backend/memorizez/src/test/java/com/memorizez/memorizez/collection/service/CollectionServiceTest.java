@@ -1,6 +1,5 @@
 package com.memorizez.memorizez.collection.service;
 
-import com.memorizez.memorizez.card.Card;
 import com.memorizez.memorizez.card.repository.CardRepository;
 import com.memorizez.memorizez.collection.Collection;
 import com.memorizez.memorizez.collection.dto.CollectionResponse;
@@ -8,8 +7,6 @@ import com.memorizez.memorizez.collection.dto.CreateCollectionRequest;
 import com.memorizez.memorizez.collection.dto.UpdateCollectionRequest;
 import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
-import com.memorizez.memorizez.review.Review;
-import com.memorizez.memorizez.review.repository.ReviewRepository;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
@@ -20,8 +17,7 @@ import org.springframework.security.core.Authentication;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class CollectionServiceTest {
@@ -32,8 +28,6 @@ public class CollectionServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         Authentication authentication = mock(Authentication.class);
         CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
-
 
         User user = new User("Test User", "test@memorizez.com", "hashed-password");
 
@@ -50,8 +44,7 @@ public class CollectionServiceTest {
             new CollectionService(
                     collectionRepository,
                     userRepository,
-                    cardRepository,
-                    reviewRepository
+                    cardRepository
                     );
 
     service.create(request, authentication);
@@ -64,6 +57,10 @@ public class CollectionServiceTest {
 
         assertEquals("Inglês", collection.getName());
         assertEquals(user, collection.getUser());
+
+        verify(userRepository)
+                .findByEmail("test@memorizez.com");
+        verifyNoInteractions(cardRepository);
     }
 
     @Test
@@ -72,7 +69,6 @@ public class CollectionServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         Authentication authentication = mock(Authentication.class);
         CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -87,14 +83,53 @@ public class CollectionServiceTest {
                 new CollectionService(
                         collectionRepository,
                         userRepository,
-                        cardRepository,
-                        reviewRepository
+                        cardRepository
                         );
 
         assertThrows(UserNotFoundException.class, () -> service.create(request, authentication));
 
         verify(collectionRepository, never()).save(any());
+        verify(userRepository)
+                .findByEmail("unknown@memorizez.com");
+        verifyNoInteractions(cardRepository);
 
+    }
+
+    @Test
+    void shouldAllowCollectionsWithSameNameForSameUser() {
+
+        UserRepository userRepository = mock(UserRepository.class);
+        CollectionRepository collectionRepository = mock(CollectionRepository.class);
+        CardRepository cardRepository = mock(CardRepository.class);
+        Authentication authentication = mock(Authentication.class);
+
+        User user = new User(
+                "Test User",
+                "test@memorizez.com",
+                "hashed-password"
+        );
+
+        CreateCollectionRequest request = new CreateCollectionRequest();
+        request.setName("Java");
+
+        when(authentication.getName())
+                .thenReturn("test@memorizez.com");
+
+        when(userRepository.findByEmail("test@memorizez.com"))
+                .thenReturn(Optional.of(user));
+
+        CollectionService service =
+                new CollectionService(
+                        collectionRepository,
+                        userRepository,
+                        cardRepository
+                );
+
+        service.create(request, authentication);
+        service.create(request, authentication);
+
+        verify(collectionRepository, times(2))
+                .save(any(Collection.class));
     }
 
     @Test
@@ -103,7 +138,6 @@ public class CollectionServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         Authentication authentication = mock(Authentication.class);
         CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -138,8 +172,7 @@ public class CollectionServiceTest {
                 new CollectionService(
                         collectionRepository,
                         userRepository,
-                        cardRepository,
-                        reviewRepository
+                        cardRepository
                 );
 
 
@@ -151,6 +184,14 @@ public class CollectionServiceTest {
 
         assertEquals(3, response.get(0).getCardCount());
         assertEquals(1, response.get(1).getCardCount());
+        assertEquals(
+                collection1.getId(),
+                response.get(0).getId()
+        );
+        assertEquals(
+                collection2.getId(),
+                response.get(1).getId()
+        );
 
         verify(collectionRepository)
                 .findAllByUserOrderByCreatedAtDesc(user);
@@ -162,12 +203,53 @@ public class CollectionServiceTest {
     }
 
     @Test
+    void shouldReturnEmptyListWhenUserHasNoCollections() {
+
+        UserRepository userRepository = mock(UserRepository.class);
+        CollectionRepository collectionRepository = mock(CollectionRepository.class);
+        CardRepository cardRepository = mock(CardRepository.class);
+        Authentication authentication = mock(Authentication.class);
+
+        User user = new User(
+                "Test User",
+                "test@memorizez.com",
+                "hashed-password"
+        );
+
+        when(authentication.getName())
+                .thenReturn("test@memorizez.com");
+
+        when(userRepository.findByEmail("test@memorizez.com"))
+                .thenReturn(Optional.of(user));
+
+        when(collectionRepository.findAllByUserOrderByCreatedAtDesc(user))
+                .thenReturn(List.of());
+
+        CollectionService service =
+                new CollectionService(
+                        collectionRepository,
+                        userRepository,
+                        cardRepository
+                );
+
+        List<CollectionResponse> response =
+                service.findAll(authentication);
+
+        assertTrue(response.isEmpty());
+
+        verify(userRepository)
+                .findByEmail("test@memorizez.com");
+        verify(collectionRepository)
+                .findAllByUserOrderByCreatedAtDesc(user);
+        verifyNoInteractions(cardRepository);
+    }
+
+    @Test
     void shouldThrowExceptionWhenUserIsNotFoundInFindAll() {
         UserRepository userRepository = mock(UserRepository.class);
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         Authentication authentication = mock(Authentication.class);
         CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -179,14 +261,16 @@ public class CollectionServiceTest {
                 new CollectionService(
                         collectionRepository,
                         userRepository,
-                        cardRepository,
-                        reviewRepository
+                        cardRepository
 
                 );
 
         assertThrows(UserNotFoundException.class, () -> service.findAll(authentication));
 
         verify(collectionRepository, never()).findAllByUserOrderByCreatedAtDesc(any());
+        verify(userRepository)
+                .findByEmail("unknown@memorizez.com");
+        verifyNoInteractions(cardRepository);
 
     }
 
@@ -196,7 +280,6 @@ public class CollectionServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         Authentication authentication = mock(Authentication.class);
         CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -208,43 +291,50 @@ public class CollectionServiceTest {
         collection.setName("Inglês");
         collection.setUser(user);
 
+        String collectionId = "collection-1";
+
+        UpdateCollectionRequest request = new UpdateCollectionRequest();
+        request.setName("Java");
+
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
 
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        String collectionId = "collection-1";
-
-        when(collectionRepository.findByIdAndUser(collectionId, user))
-                .thenReturn(Optional.of(collection));
-
-        UpdateCollectionRequest request = new UpdateCollectionRequest();
-        request.setName("Java");
+        when(collectionRepository.findByIdAndUser(
+                collectionId,
+                user
+        )).thenReturn(Optional.of(collection));
 
         CollectionService service =
                 new CollectionService(
                         collectionRepository,
                         userRepository,
-                        cardRepository,
-                        reviewRepository
-                        );
+                        cardRepository
+                );
 
-        service.update(collectionId, request, authentication);
+        service.update(
+                collectionId,
+                request,
+                authentication
+        );
 
-        ArgumentCaptor<Collection> captor =
-                ArgumentCaptor.forClass(Collection.class);
+        assertEquals(
+                "Java",
+                collection.getName()
+        );
 
+        verify(userRepository)
+                .findByEmail("test@memorizez.com");
         verify(collectionRepository)
-                .findByIdAndUser(collectionId, user);
-
-        verify(collectionRepository).save(captor.capture());
-
-        Collection updatedCollection = captor.getValue();
-
-        assertEquals("Java", updatedCollection.getName());
-        assertEquals(user, updatedCollection.getUser());
-
+                .findByIdAndUser(
+                        collectionId,
+                        user
+                );
+        verify(collectionRepository)
+                .save(collection);
+        verifyNoInteractions(cardRepository);
     }
 
     @Test
@@ -253,7 +343,6 @@ public class CollectionServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         Authentication authentication = mock(Authentication.class);
         CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -279,8 +368,7 @@ public class CollectionServiceTest {
                 new CollectionService(
                         collectionRepository,
                         userRepository,
-                        cardRepository,
-                        reviewRepository
+                        cardRepository
                         );
 
         assertThrows(
@@ -300,7 +388,6 @@ public class CollectionServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         Authentication authentication = mock(Authentication.class);
         CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -317,8 +404,7 @@ public class CollectionServiceTest {
                 new CollectionService(
                         collectionRepository,
                         userRepository,
-                        cardRepository,
-                        reviewRepository
+                        cardRepository
                         );
 
         assertThrows(
@@ -330,6 +416,9 @@ public class CollectionServiceTest {
                 .findByIdAndUser(anyString(), any());
 
         verify(collectionRepository, never()).save(any());
+        verify(userRepository)
+                .findByEmail("unknown@memorizez.com");
+        verifyNoInteractions(cardRepository);
 
     }
 
@@ -339,7 +428,6 @@ public class CollectionServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         Authentication authentication = mock(Authentication.class);
         CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -351,26 +439,6 @@ public class CollectionServiceTest {
         collection.setName("Inglês");
         collection.setUser(user);
 
-        Card card1 = new Card();
-        card1.setFront("What is encapsulation?");
-        card1.setBack("O que é encapsulamento");
-        card1.setCollection(collection);
-
-        Card card2 = new Card();
-        card2.setFront("What is inheritance?");
-        card2.setBack("O que é herança");
-        card2.setCollection(collection);
-
-
-        Review review = new Review();
-        review.setCard(card1);
-
-        when(authentication.getName())
-                .thenReturn("test@memorizez.com");
-
-        when(userRepository.findByEmail("test@memorizez.com"))
-                .thenReturn(Optional.of(user));
-
         String collectionId = "collection-1";
 
         when(authentication.getName())
@@ -379,46 +447,31 @@ public class CollectionServiceTest {
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        when(collectionRepository.findByIdAndUser(collectionId, user))
-                .thenReturn(Optional.of(collection));
-
-        when(cardRepository.findAllByCollection(collection))
-                .thenReturn(List.of(card1, card2));
-
-        when(reviewRepository.findByCard(card1))
-                .thenReturn(Optional.of(review));
-
-        when(reviewRepository.findByCard(card2))
-                .thenReturn(Optional.empty());
+        when(collectionRepository.findByIdAndUser(
+                collectionId,
+                user
+        )).thenReturn(Optional.of(collection));
 
         CollectionService service =
                 new CollectionService(
                         collectionRepository,
                         userRepository,
-                        cardRepository,
-                        reviewRepository
+                        cardRepository
                 );
 
         service.delete(collectionId, authentication);
 
+        verify(userRepository)
+                .findByEmail("test@memorizez.com");
+
         verify(collectionRepository)
-                .findByIdAndUser(collectionId, user);
-        verify(cardRepository)
-                .findAllByCollection(collection);
-
-        verify(reviewRepository)
-                .findByCard(card1);
-        verify(reviewRepository)
-                .delete(review);
-        verify(reviewRepository)
-                .findByCard(card2);
-        verify(cardRepository)
-                .delete(card1);
-        verify(cardRepository)
-                .delete(card2);
-
+                .findByIdAndUser(
+                        collectionId,
+                        user
+                );
         verify(collectionRepository)
                 .delete(collection);
+        verifyNoInteractions(cardRepository);
     }
 
     @Test
@@ -427,7 +480,6 @@ public class CollectionServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         Authentication authentication = mock(Authentication.class);
         CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
         User user = new User(
                 "Test User",
@@ -435,34 +487,44 @@ public class CollectionServiceTest {
                 "hashed-password"
         );
 
+        String collectionId = "collection-1";
+
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
 
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        String collectionId = "collection-1";
-
-        when(collectionRepository.findByIdAndUser(collectionId, user))
-                .thenReturn(Optional.empty());
+        when(collectionRepository.findByIdAndUser(
+                collectionId,
+                user
+        )).thenReturn(Optional.empty());
 
         CollectionService service =
                 new CollectionService(
                         collectionRepository,
                         userRepository,
-                        cardRepository,
-                        reviewRepository
-                        );
+                        cardRepository
+                );
 
         assertThrows(
                 CollectionNotFoundException.class,
-                () -> service.delete(collectionId, authentication)
+                () -> service.delete(
+                        collectionId,
+                        authentication
+                )
         );
 
-        verify(collectionRepository, never()).delete(any());
+        verify(userRepository)
+                .findByEmail("test@memorizez.com");
         verify(collectionRepository)
-                .findByIdAndUser(collectionId, user);
-
+                .findByIdAndUser(
+                        collectionId,
+                        user
+                );
+        verify(collectionRepository, never())
+                .delete(any(Collection.class));
+        verifyNoInteractions(cardRepository);
     }
 
     @Test
@@ -471,33 +533,36 @@ public class CollectionServiceTest {
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         Authentication authentication = mock(Authentication.class);
         CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
 
-       when(authentication.getName())
+        String collectionId = "collection-1";
+
+        when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
 
         when(userRepository.findByEmail("unknown@memorizez.com"))
                 .thenReturn(Optional.empty());
 
-        String collectionId = "collection-1";
-
-       CollectionService service =
-               new CollectionService(
-                       collectionRepository,
-                       userRepository,
-                       cardRepository,
-                       reviewRepository
-                       );
+        CollectionService service =
+                new CollectionService(
+                        collectionRepository,
+                        userRepository,
+                        cardRepository
+                );
 
         assertThrows(
                 UserNotFoundException.class,
-                () -> service.delete(collectionId, authentication)
+                () -> service.delete(
+                        collectionId,
+                        authentication
+                )
         );
 
-        verify(collectionRepository, never()).delete(any());
-        verify(collectionRepository, never())
-                .findByIdAndUser(anyString(), any());
-
+        verify(userRepository)
+                .findByEmail("unknown@memorizez.com");
+        verifyNoInteractions(
+                collectionRepository,
+                cardRepository
+        );
     }
 
 }
