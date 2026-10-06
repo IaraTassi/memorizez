@@ -2,6 +2,7 @@ package com.memorizez.memorizez.user.controller;
 
 
 import com.memorizez.memorizez.user.dto.LoginRequest;
+import com.memorizez.memorizez.user.dto.RegisterUserRequest;
 import com.memorizez.memorizez.user.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,6 +14,7 @@ import tools.jackson.databind.ObjectMapper;
 
 
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -25,6 +27,31 @@ public class UserControllerTest {
     private final UserController userController = new UserController(userService, authenticationManager, securityContextRepository);
     private final MockMvc mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    void shouldRegisterSuccessfully() throws Exception {
+
+        RegisterUserRequest request = new RegisterUserRequest();
+        request.setName("Test User");
+        request.setEmail("test@memorizez.com");
+        request.setPassword("12345678");
+        request.setConfirmPassword("12345678");
+
+        mockMvc.perform(
+                        post("/users")
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andExpect(status().isCreated());
+
+        verify(userService)
+                .register(any(RegisterUserRequest.class));
+
+        verifyNoInteractions(
+                authenticationManager,
+                securityContextRepository
+        );
+    }
 
     @Test
     void shouldLoginSuccessfully() throws Exception {
@@ -50,4 +77,23 @@ public class UserControllerTest {
     }
 
 
+    @Test
+    void shouldDeleteUserSuccessfully() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        mockMvc.perform(
+                        delete("/users")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNoContent());
+
+        verify(userService)
+                .delete(authentication);
+
+        verifyNoInteractions(
+                authenticationManager,
+                securityContextRepository
+        );
+    }
 }

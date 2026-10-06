@@ -95,7 +95,7 @@ public class RegisterUserRequestValidationTest {
         RegisterUserRequest request = new RegisterUserRequest();
 
         request.setName("Test User");
-        request.setEmail("test@memorizez.com");
+        request.setEmail("tes@m.com");
         request.setPassword("12345678");
         request.setConfirmPassword("12345678");
 
