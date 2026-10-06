@@ -9,6 +9,9 @@ import com.memorizez.memorizez.card.repository.CardRepository;
 import com.memorizez.memorizez.collection.Collection;
 import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
+import com.memorizez.memorizez.history.History;
+import com.memorizez.memorizez.history.HistoryAction;
+import com.memorizez.memorizez.history.repository.HistoryRepository;
 import com.memorizez.memorizez.review.Review;
 import com.memorizez.memorizez.review.ReviewResult;
 import com.memorizez.memorizez.review.ReviewStage;
@@ -43,6 +46,7 @@ public class CardServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         User user = new User("Test User", "test@memorizez.com", "hashed-password");
 
@@ -71,7 +75,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                         );
 
         service.create(collectionId, request, authentication);
@@ -99,6 +104,7 @@ public class CardServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -118,7 +124,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                         );
 
         assertThrows(UserNotFoundException.class, () -> service.create(collectionId, request, authentication));
@@ -137,6 +144,7 @@ public class CardServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         User user = new User(
                 "Test User",
@@ -165,7 +173,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
         assertThrows(
@@ -188,6 +197,7 @@ public class CardServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         User user = new User(
                 "Test User",
@@ -229,7 +239,12 @@ public class CardServiceTest {
 
         Pageable pageable = PageRequest.of(0, 20);
 
-        Page<Card> cards = new PageImpl<>(List.of(card1, card2));
+        Page<Card> cards =
+                new PageImpl<>(
+                        List.of(card1, card2),
+                        pageable,
+                        2
+                );
 
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
@@ -248,7 +263,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
         Page<CardResponse> response =
@@ -270,6 +286,70 @@ public class CardServiceTest {
         assertEquals(5, response.getContent().get(1).getRememberedCount());
         assertEquals(0, response.getContent().get(1).getNotRememberedCount());
         assertEquals(1, response.getContent().get(1).getEditCount());
+
+        assertEquals(0, response.getNumber());
+        assertEquals(20, response.getSize());
+        assertEquals(2, response.getTotalElements());
+
+    }
+
+    @Test
+    void shouldReturnEmptyPageWhenCollectionHasNoCards() {
+
+        UserRepository userRepository = mock(UserRepository.class);
+        CollectionRepository collectionRepository = mock(CollectionRepository.class);
+        CardRepository cardRepository = mock(CardRepository.class);
+        Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
+
+        User user = new User(
+                "Test User",
+                "test@memorizez.com",
+                "hashed-password"
+        );
+
+        String collectionId = "collection-1";
+
+        Collection collection = new Collection();
+        collection.setName("Inglês");
+        collection.setUser(user);
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Page<Card> cards = Page.empty(pageable);
+
+        when(authentication.getName())
+                .thenReturn("test@memorizez.com");
+
+        when(userRepository.findByEmail("test@memorizez.com"))
+                .thenReturn(Optional.of(user));
+
+        when(collectionRepository.findByIdAndUser(collectionId, user))
+                .thenReturn(Optional.of(collection));
+
+        when(cardRepository.findAllByCollectionOrderByFrontAsc(collection, pageable))
+                .thenReturn(cards);
+
+        CardService service =
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository,
+                        historyRepository
+                );
+
+        Page<CardResponse> response =
+                service.findAll(collectionId, pageable, authentication);
+
+        assertTrue(response.getContent().isEmpty());
+        assertEquals(0, response.getTotalElements());
+        assertEquals(0, response.getNumber());
+        assertEquals(20, response.getSize());
+
+        verify(cardRepository)
+                .findAllByCollectionOrderByFrontAsc(collection, pageable);
     }
 
     @Test
@@ -279,6 +359,7 @@ public class CardServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -295,7 +376,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
         assertThrows(UserNotFoundException.class, () -> service.findAll(collectionId, pageable, authentication));
@@ -313,6 +395,7 @@ public class CardServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         User user = new User(
                 "Test User",
@@ -337,7 +420,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
         assertThrows(
@@ -350,12 +434,13 @@ public class CardServiceTest {
     }
 
     @Test
-    void shouldUpdateCardSuccessfully() {
+    void shouldUpdateCardSuccessfullyWhenReviewDoesNotExist() {
         UserRepository userRepository = mock(UserRepository.class);
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         User user = new User(
                 "Test User",
@@ -388,6 +473,9 @@ public class CardServiceTest {
         when(cardRepository.findByIdAndCollection(cardId, collection))
                 .thenReturn(Optional.of(card));
 
+        when(reviewRepository.findByCard(card))
+                .thenReturn(Optional.empty());
+
         UpdateCardRequest request = new UpdateCardRequest();
         request.setFront("What is inheritance in OOP?");
         request.setBack("What is inheritance in object-oriented programming?");
@@ -398,7 +486,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
         service.update(collectionId, cardId, request, authentication);
@@ -418,9 +507,113 @@ public class CardServiceTest {
         assertEquals("What is inheritance in object-oriented programming?", updatedCard.getBack());
         assertEquals("", updatedCard.getNotes());
         assertEquals(collection, updatedCard.getCollection());
-
         assertEquals(1, updatedCard.getEditCount());
 
+        ArgumentCaptor<History> historyCaptor =
+                ArgumentCaptor.forClass(History.class);
+
+        verify(historyRepository)
+                .save(historyCaptor.capture());
+
+        History savedHistory = historyCaptor.getValue();
+
+        assertEquals(
+                HistoryAction.EDITED,
+                savedHistory.getAction()
+        );
+
+        assertNotNull(savedHistory.getCreatedAt());
+
+        verify(reviewRepository)
+                .findByCard(card);
+
+        verify(reviewRepository, never())
+                .save(any(Review.class));
+
+    }
+
+    @Test
+    void shouldNotUpdateCardWhenNoFieldWasChanged() {
+
+        UserRepository userRepository = mock(UserRepository.class);
+        CollectionRepository collectionRepository = mock(CollectionRepository.class);
+        CardRepository cardRepository = mock(CardRepository.class);
+        Authentication authentication = mock(Authentication.class);
+        ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
+
+        User user = new User(
+                "Test User",
+                "test@memorizez.com",
+                "hashed-password"
+        );
+
+        Collection collection = new Collection();
+        collection.setName("Inglês");
+        collection.setUser(user);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        Card card = new Card();
+        card.setFront("What is encapsulation?");
+        card.setBack("O que é encapsulamento");
+        card.setNotes("Princípio da POO.");
+        card.setCollection(collection);
+
+        UpdateCardRequest request = new UpdateCardRequest();
+        request.setFront("What is encapsulation?");
+        request.setBack("O que é encapsulamento");
+        request.setNotes("Princípio da POO.");
+
+        when(authentication.getName())
+                .thenReturn("test@memorizez.com");
+
+        when(userRepository.findByEmail("test@memorizez.com"))
+                .thenReturn(Optional.of(user));
+
+        when(collectionRepository.findByIdAndUser(
+                collectionId,
+                user
+        )).thenReturn(Optional.of(collection));
+
+        when(cardRepository.findByIdAndCollection(
+                cardId,
+                collection
+        )).thenReturn(Optional.of(card));
+
+        CardService service =
+                new CardService(
+                        cardRepository,
+                        collectionRepository,
+                        userRepository,
+                        reviewRepository,
+                        historyRepository
+                );
+
+        service.update(
+                collectionId,
+                cardId,
+                request,
+                authentication
+        );
+
+        assertEquals(
+                0,
+                card.getEditCount()
+        );
+
+        verify(cardRepository, never())
+                .save(any(Card.class));
+
+        verify(reviewRepository, never())
+                .findByCard(any(Card.class));
+
+        verify(reviewRepository, never())
+                .save(any(Review.class));
+
+        verify(historyRepository, never())
+                .save(any(History.class));
     }
 
     @Test
@@ -431,6 +624,7 @@ public class CardServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         User user = new User(
                 "Test User",
@@ -482,7 +676,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
         service.update(collectionId, cardId, request, authentication);
@@ -491,16 +686,21 @@ public class CardServiceTest {
                 "What is inheritance in OOP?",
                 card.getFront()
         );
+
         assertEquals(
                 "What is inheritance in object-oriented programming?",
                 card.getBack()
         );
+
         assertEquals(
                 "Inheritance allows code reuse.",
                 card.getNotes()
         );
 
-        assertEquals(1, card.getEditCount());
+        assertEquals(
+                1,
+                card.getEditCount()
+        );
 
         assertEquals(
                 ReviewStage.ONE_DAY,
@@ -512,7 +712,26 @@ public class CardServiceTest {
                 review.getNextReviewDate()
         );
 
-        assertNull(review.getRevealedAt());
+        assertNull(
+                review.getRevealedAt()
+        );
+
+        ArgumentCaptor<History> historyCaptor =
+                ArgumentCaptor.forClass(History.class);
+
+        verify(historyRepository)
+                .save(historyCaptor.capture());
+
+        History savedHistory = historyCaptor.getValue();
+
+        assertEquals(
+                HistoryAction.EDITED,
+                savedHistory.getAction()
+        );
+
+        assertNotNull(
+                savedHistory.getCreatedAt()
+        );
 
         verify(reviewRepository)
                 .findByCard(card);
@@ -525,180 +744,13 @@ public class CardServiceTest {
     }
 
     @Test
-    void shouldIncrementRememberedCountWhenUserRemembersCard() {
-
-        UserRepository userRepository = mock(UserRepository.class);
-        CollectionRepository collectionRepository = mock(CollectionRepository.class);
-        CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
-        Authentication authentication = mock(Authentication.class);
-
-        User user = new User(
-                "Test User",
-                "test@memorizez.com",
-                "hashed-password"
-        );
-
-        Collection collection = new Collection();
-        collection.setName("Inglês");
-        collection.setUser(user);
-
-        Card card = new Card();
-        card.setFront("What is encapsulation?");
-        card.setBack("O que é encapsulamento");
-        card.setCollection(collection);
-
-        Review review = new Review();
-        review.setCard(card);
-        review.setStage(ReviewStage.ONE_DAY);
-        review.setNextReviewDate(LocalDate.now().plusDays(1));
-        review.setRevealedAt(LocalDateTime.now());
-
-        ReviewResultRequest request = new ReviewResultRequest();
-        request.setResult(ReviewResult.REMEMBERED);
-
-        String collectionId = "collection-1";
-        String cardId = "card-1";
-
-        when(authentication.getName())
-                .thenReturn("test@memorizez.com");
-
-        when(userRepository.findByEmail("test@memorizez.com"))
-                .thenReturn(Optional.of(user));
-
-        when(collectionRepository.findByIdAndUser(collectionId, user))
-                .thenReturn(Optional.of(collection));
-
-        when(cardRepository.findByIdAndCollection(cardId, collection))
-                .thenReturn(Optional.of(card));
-
-        when(reviewRepository.findByCard(card))
-                .thenReturn(Optional.of(review));
-
-        ReviewService service =
-                new ReviewService(
-                        reviewRepository,
-                        cardRepository,
-                        collectionRepository,
-                        userRepository
-                );
-
-        service.submitResult(
-                collectionId,
-                cardId,
-                request,
-                authentication
-        );
-
-        assertEquals(1, card.getRememberedCount());
-        assertEquals(0, card.getNotRememberedCount());
-
-        assertEquals(ReviewStage.SEVEN_DAYS, review.getStage());
-        assertEquals(
-                LocalDate.now().plusDays(7),
-                review.getNextReviewDate()
-        );
-        assertNull(review.getRevealedAt());
-
-        verify(cardRepository)
-                .save(card);
-
-        verify(reviewRepository)
-                .save(review);
-    }
-
-    @Test
-    void shouldIncrementNotRememberedCountWhenUserDoesNotRememberCard() {
-
-        UserRepository userRepository = mock(UserRepository.class);
-        CollectionRepository collectionRepository = mock(CollectionRepository.class);
-        CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
-        Authentication authentication = mock(Authentication.class);
-
-        User user = new User(
-                "Test User",
-                "test@memorizez.com",
-                "hashed-password"
-        );
-
-        Collection collection = new Collection();
-        collection.setName("Inglês");
-        collection.setUser(user);
-
-        Card card = new Card();
-        card.setFront("What is encapsulation?");
-        card.setBack("O que é encapsulamento");
-        card.setCollection(collection);
-
-        Review review = new Review();
-        review.setCard(card);
-        review.setStage(ReviewStage.SEVEN_DAYS);
-        review.setNextReviewDate(LocalDate.now().plusDays(7));
-        review.setRevealedAt(LocalDateTime.now());
-
-        ReviewResultRequest request = new ReviewResultRequest();
-        request.setResult(ReviewResult.NOT_REMEMBERED);
-
-        String collectionId = "collection-1";
-        String cardId = "card-1";
-
-        when(authentication.getName())
-                .thenReturn("test@memorizez.com");
-
-        when(userRepository.findByEmail("test@memorizez.com"))
-                .thenReturn(Optional.of(user));
-
-        when(collectionRepository.findByIdAndUser(collectionId, user))
-                .thenReturn(Optional.of(collection));
-
-        when(cardRepository.findByIdAndCollection(cardId, collection))
-                .thenReturn(Optional.of(card));
-
-        when(reviewRepository.findByCard(card))
-                .thenReturn(Optional.of(review));
-
-        ReviewService service =
-                new ReviewService(
-                        reviewRepository,
-                        cardRepository,
-                        collectionRepository,
-                        userRepository
-                );
-
-        service.submitResult(
-                collectionId,
-                cardId,
-                request,
-                authentication
-        );
-
-        assertEquals(0, card.getRememberedCount());
-        assertEquals(1, card.getNotRememberedCount());
-
-        assertEquals(ReviewStage.ONE_DAY, review.getStage());
-
-        assertEquals(
-                LocalDate.now().plusDays(1),
-                review.getNextReviewDate()
-        );
-
-        assertNull(review.getRevealedAt());
-
-        verify(cardRepository)
-                .save(card);
-
-        verify(reviewRepository)
-                .save(review);
-    }
-
-    @Test
     void shouldThrowExceptionWhenUserIsNotFoundInUpdate() {
         UserRepository userRepository = mock(UserRepository.class);
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -719,7 +771,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
         assertThrows(
@@ -744,6 +797,7 @@ public class CardServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         User user = new User(
                 "Test User",
@@ -773,7 +827,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
         assertThrows(
@@ -795,6 +850,7 @@ public class CardServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         User user = new User(
                 "Test User",
@@ -831,7 +887,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
         assertThrows(
@@ -848,11 +905,13 @@ public class CardServiceTest {
 
     @Test
     void shouldDeleteCardSuccessfully() {
+
         UserRepository userRepository = mock(UserRepository.class);
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         User user = new User(
                 "Test User",
@@ -866,12 +925,9 @@ public class CardServiceTest {
 
         Card card = new Card();
         card.setFront("What is encapsulation?");
-        card.setBack("O que is encapsulamento");
+        card.setBack("O que é encapsulamento");
         card.setNotes("Princípio da POO.");
         card.setCollection(collection);
-
-        Review review = new Review();
-        review.setCard(card);
 
         String collectionId = "collection-1";
         String cardId = "card-1";
@@ -882,31 +938,53 @@ public class CardServiceTest {
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        when(collectionRepository.findByIdAndUser(collectionId, user))
-                .thenReturn(Optional.of(collection));
+        when(collectionRepository.findByIdAndUser(
+                collectionId,
+                user
+        )).thenReturn(Optional.of(collection));
 
-        when(cardRepository.findByIdAndCollection(cardId, collection))
-                .thenReturn(Optional.of(card));
-
-        when(reviewRepository.findByCard(card))
-                .thenReturn(Optional.of(review));
+        when(cardRepository.findByIdAndCollection(
+                cardId,
+                collection
+        )).thenReturn(Optional.of(card));
 
         CardService service =
                 new CardService(
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
-        service.delete(collectionId, cardId, authentication);
+        service.delete(
+                collectionId,
+                cardId,
+                authentication
+        );
 
-        verify(reviewRepository)
-                .findByCard(card);
-        verify(reviewRepository)
-                .delete(review);
+        verify(userRepository)
+                .findByEmail("test@memorizez.com");
+
+        verify(collectionRepository)
+                .findByIdAndUser(
+                        collectionId,
+                        user
+                );
+
+        verify(cardRepository)
+                .findByIdAndCollection(
+                        cardId,
+                        collection
+                );
+
         verify(cardRepository)
                 .delete(card);
+
+        verifyNoInteractions(
+                reviewRepository,
+                historyRepository
+        );
     }
 
     @Test
@@ -916,6 +994,7 @@ public class CardServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -931,7 +1010,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
         assertThrows(
@@ -956,6 +1036,7 @@ public class CardServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         User user = new User(
                 "Test User",
@@ -980,7 +1061,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
         assertThrows(
@@ -1002,6 +1084,7 @@ public class CardServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
+        HistoryRepository historyRepository = mock(HistoryRepository.class);
 
         User user = new User(
                 "Test User",
@@ -1033,7 +1116,8 @@ public class CardServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        reviewRepository
+                        reviewRepository,
+                        historyRepository
                 );
 
         assertThrows(

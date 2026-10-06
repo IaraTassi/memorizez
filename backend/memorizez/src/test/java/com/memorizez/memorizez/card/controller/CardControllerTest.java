@@ -5,6 +5,7 @@ import com.memorizez.memorizez.card.dto.CreateCardRequest;
 import com.memorizez.memorizez.card.dto.UpdateCardRequest;
 import com.memorizez.memorizez.card.service.CardService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +19,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -107,12 +109,21 @@ public class CardControllerTest {
                 .andExpect(jsonPath("$.content[0].front").value("What is inheritance in OOP?"))
                 .andExpect(jsonPath("$.content[1].front").value("O que é Spring Boot?"));
 
+        ArgumentCaptor<Pageable> pageableCaptor =
+                ArgumentCaptor.forClass(Pageable.class);
+
+
         verify(cardService)
                 .findAll(
                         eq(collectionId),
-                        any(Pageable.class),
+                        pageableCaptor.capture(),
                         eq(authentication)
                 );
+
+        Pageable capturedPageable = pageableCaptor.getValue();
+
+        assertEquals(0, capturedPageable.getPageNumber());
+        assertEquals(20, capturedPageable.getPageSize());
     }
 
     @Test
