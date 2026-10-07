@@ -1,12 +1,16 @@
 package com.memorizez.memorizez.review.controller;
 
+import com.memorizez.memorizez.card.exception.CardNotFoundException;
+import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
 import com.memorizez.memorizez.exception.GlobalExceptionHandler;
 import com.memorizez.memorizez.review.ReviewResult;
 import com.memorizez.memorizez.review.ReviewStage;
 import com.memorizez.memorizez.review.dto.*;
+import com.memorizez.memorizez.review.exception.CardNotAvailableForReviewException;
 import com.memorizez.memorizez.review.exception.CardNotRevealedException;
 import com.memorizez.memorizez.review.service.ReviewService;
 
+import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -77,6 +81,33 @@ public class ReviewControllerTest {
     }
 
     @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInFindAvailableForReview() throws Exception {
+
+        ReviewService reviewService = mock(ReviewService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(reviewService.findAvailableForReview(authentication))
+                .thenThrow(new UserNotFoundException("User not found"));
+
+        ReviewController controller =
+                new ReviewController(reviewService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/reviews")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(reviewService)
+                .findAvailableForReview(authentication);
+    }
+
+    @Test
     void shouldFindCollectionsForReviewSuccessfully() throws Exception {
 
         ReviewService reviewService = mock(ReviewService.class);
@@ -109,6 +140,33 @@ public class ReviewControllerTest {
                 .andExpect(jsonPath("$[1].id").value("collection-2"))
                 .andExpect(jsonPath("$[1].name").value("Java"))
                 .andExpect(jsonPath("$[1].availableCardCount").value(0));
+
+        verify(reviewService)
+                .findCollectionsForReview(authentication);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInFindCollectionsForReview() throws Exception {
+
+        ReviewService reviewService = mock(ReviewService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(reviewService.findCollectionsForReview(authentication))
+                .thenThrow(new UserNotFoundException("User not found"));
+
+        ReviewController controller =
+                new ReviewController(reviewService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/reviews/collections")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
 
         verify(reviewService)
                 .findCollectionsForReview(authentication);
@@ -155,6 +213,152 @@ public class ReviewControllerTest {
                         .value("O que é encapsulamento"))
                 .andExpect(jsonPath("$.notes")
                         .value("Princípio da POO."));
+
+        verify(reviewService)
+                .reveal(
+                        "collection-1",
+                        "card-1",
+                        authentication
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInReveal() throws Exception {
+
+        ReviewService reviewService = mock(ReviewService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(reviewService.reveal(
+                "collection-1",
+                "card-1",
+                authentication
+        )).thenThrow(
+                new UserNotFoundException("User not found")
+        );
+
+        ReviewController controller =
+                new ReviewController(reviewService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/reviews/collections/collection-1/cards/card-1/review")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(reviewService)
+                .reveal(
+                        "collection-1",
+                        "card-1",
+                        authentication
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCollectionIsNotFoundInReveal() throws Exception {
+
+        ReviewService reviewService = mock(ReviewService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(reviewService.reveal(
+                "collection-1",
+                "card-1",
+                authentication
+        )).thenThrow(
+                new CollectionNotFoundException("Collection not found")
+        );
+
+        ReviewController controller =
+                new ReviewController(reviewService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/reviews/collections/collection-1/cards/card-1/review")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(reviewService)
+                .reveal(
+                        "collection-1",
+                        "card-1",
+                        authentication
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCardIsNotFoundInReveal() throws Exception {
+
+        ReviewService reviewService = mock(ReviewService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(reviewService.reveal(
+                "collection-1",
+                "card-1",
+                authentication
+        )).thenThrow(
+                new CardNotFoundException("Card not found")
+        );
+
+        ReviewController controller =
+                new ReviewController(reviewService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/reviews/collections/collection-1/cards/card-1/review")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(reviewService)
+                .reveal(
+                        "collection-1",
+                        "card-1",
+                        authentication
+                );
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenCardIsNotAvailableForReview() throws Exception {
+
+        ReviewService reviewService = mock(ReviewService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(reviewService.reveal(
+                "collection-1",
+                "card-1",
+                authentication
+        )).thenThrow(
+                new CardNotAvailableForReviewException(
+                        "Card is not available for review"
+                )
+        );
+
+        ReviewController controller =
+                new ReviewController(reviewService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/reviews/collections/collection-1/cards/card-1/review")
+                                .principal(authentication)
+                )
+                .andExpect(status().isBadRequest());
 
         verify(reviewService)
                 .reveal(
@@ -290,4 +494,217 @@ public class ReviewControllerTest {
                         eq(authentication)
                 );
     }
+
+    @Test
+    void shouldReturnBadRequestWhenSubmitResultRequestIsInvalid() throws Exception {
+
+        ReviewService reviewService = mock(ReviewService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        ReviewController controller =
+                new ReviewController(reviewService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        post("/reviews/collections/collection-1/cards/card-1/result")
+                                .principal(authentication)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                    "result": null
+                                }
+                                """)
+                )
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(reviewService);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInSubmitResult() throws Exception {
+
+        ReviewService reviewService = mock(ReviewService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        ReviewResultRequest request =
+                new ReviewResultRequest();
+
+        request.setResult(ReviewResult.REMEMBERED);
+
+        when(reviewService.submitResult(
+                eq("collection-1"),
+                eq("card-1"),
+                any(ReviewResultRequest.class),
+                eq(authentication)
+        )).thenThrow(
+                new UserNotFoundException("User not found")
+        );
+
+        ReviewController controller =
+                new ReviewController(reviewService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        post("/reviews/collections/collection-1/cards/card-1/result")
+                                .principal(authentication)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                    "result": "REMEMBERED"
+                                }
+                                """)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(reviewService)
+                .submitResult(
+                        eq("collection-1"),
+                        eq("card-1"),
+                        any(ReviewResultRequest.class),
+                        eq(authentication)
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCollectionIsNotFoundInSubmitResult() throws Exception {
+
+        ReviewService reviewService = mock(ReviewService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(reviewService.submitResult(
+                eq("collection-1"),
+                eq("card-1"),
+                any(ReviewResultRequest.class),
+                eq(authentication)
+        )).thenThrow(
+                new CollectionNotFoundException("Collection not found")
+        );
+
+        ReviewController controller =
+                new ReviewController(reviewService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        post("/reviews/collections/collection-1/cards/card-1/result")
+                                .principal(authentication)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                    "result": "REMEMBERED"
+                                }
+                                """)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(reviewService)
+                .submitResult(
+                        eq("collection-1"),
+                        eq("card-1"),
+                        any(ReviewResultRequest.class),
+                        eq(authentication)
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCardIsNotFoundInSubmitResult() throws Exception {
+
+        ReviewService reviewService = mock(ReviewService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(reviewService.submitResult(
+                eq("collection-1"),
+                eq("card-1"),
+                any(ReviewResultRequest.class),
+                eq(authentication)
+        )).thenThrow(
+                new CardNotFoundException("Card not found")
+        );
+
+        ReviewController controller =
+                new ReviewController(reviewService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        post("/reviews/collections/collection-1/cards/card-1/result")
+                                .principal(authentication)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                    "result": "REMEMBERED"
+                                }
+                                """)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(reviewService)
+                .submitResult(
+                        eq("collection-1"),
+                        eq("card-1"),
+                        any(ReviewResultRequest.class),
+                        eq(authentication)
+                );
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenCardIsNotCurrentCardInSubmitResult() throws Exception {
+
+        ReviewService reviewService = mock(ReviewService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(reviewService.submitResult(
+                eq("collection-1"),
+                eq("card-1"),
+                any(ReviewResultRequest.class),
+                eq(authentication)
+        )).thenThrow(
+                new CardNotAvailableForReviewException(
+                        "Card is not available for review"
+                )
+        );
+
+        ReviewController controller =
+                new ReviewController(reviewService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        post("/reviews/collections/collection-1/cards/card-1/result")
+                                .principal(authentication)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                    "result": "REMEMBERED"
+                                }
+                                """)
+                )
+                .andExpect(status().isBadRequest());
+
+        verify(reviewService)
+                .submitResult(
+                        eq("collection-1"),
+                        eq("card-1"),
+                        any(ReviewResultRequest.class),
+                        eq(authentication)
+                );
+    }
+
 }

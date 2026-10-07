@@ -1,8 +1,12 @@
 package com.memorizez.memorizez.freeStudy.controller;
 
+import com.memorizez.memorizez.card.exception.CardNotFoundException;
+import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
+import com.memorizez.memorizez.exception.GlobalExceptionHandler;
 import com.memorizez.memorizez.freeStudy.dto.FreeStudyCollectionResponse;
 import com.memorizez.memorizez.freeStudy.dto.FreeStudyResponse;
 import com.memorizez.memorizez.freeStudy.service.FreeStudyService;
+import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
@@ -68,6 +72,33 @@ public class FreeStudyControllerTest {
     }
 
     @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInFindCollectionsForFreeStudy() throws Exception {
+
+        FreeStudyService freeStudyService = mock(FreeStudyService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(freeStudyService.findCollectionsForFreeStudy(authentication))
+                .thenThrow(new UserNotFoundException("User not found"));
+
+        FreeStudyController controller =
+                new FreeStudyController(freeStudyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/free-study/collections")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(freeStudyService)
+                .findCollectionsForFreeStudy(authentication);
+    }
+
+    @Test
     void shouldFindFirstCardForFreeStudySuccessfully() throws Exception {
 
         FreeStudyService freeStudyService = mock(FreeStudyService.class);
@@ -105,6 +136,74 @@ public class FreeStudyControllerTest {
                         .value("What is encapsulation?"))
                 .andExpect(jsonPath("$.back").doesNotExist())
                 .andExpect(jsonPath("$.notes").doesNotExist());
+
+        verify(freeStudyService)
+                .findFirstCard(
+                        "collection-1",
+                        authentication
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInFindFirstCard() throws Exception {
+
+        FreeStudyService freeStudyService = mock(FreeStudyService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(freeStudyService.findFirstCard(
+                "collection-1",
+                authentication
+        )).thenThrow(
+                new UserNotFoundException("User not found")
+        );
+
+        FreeStudyController controller =
+                new FreeStudyController(freeStudyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/free-study/collections/collection-1")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(freeStudyService)
+                .findFirstCard(
+                        "collection-1",
+                        authentication
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCollectionIsNotFoundInFindFirstCard() throws Exception {
+
+        FreeStudyService freeStudyService = mock(FreeStudyService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(freeStudyService.findFirstCard(
+                "collection-1",
+                authentication
+        )).thenThrow(
+                new CollectionNotFoundException("Collection not found")
+        );
+
+        FreeStudyController controller =
+                new FreeStudyController(freeStudyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/free-study/collections/collection-1")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
 
         verify(freeStudyService)
                 .findFirstCard(
@@ -195,6 +294,114 @@ public class FreeStudyControllerTest {
     }
 
     @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInFreeBack() throws Exception {
+
+        FreeStudyService freeStudyService = mock(FreeStudyService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(freeStudyService.freeBack(
+                "collection-1",
+                "card-1",
+                authentication
+        )).thenThrow(
+                new UserNotFoundException("User not found")
+        );
+
+        FreeStudyController controller =
+                new FreeStudyController(freeStudyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/free-study/collections/collection-1/cards/card-1/back")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(freeStudyService)
+                .freeBack(
+                        "collection-1",
+                        "card-1",
+                        authentication
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCollectionIsNotFoundInFreeBack() throws Exception {
+
+        FreeStudyService freeStudyService = mock(FreeStudyService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(freeStudyService.freeBack(
+                "collection-1",
+                "card-1",
+                authentication
+        )).thenThrow(
+                new CollectionNotFoundException("Collection not found")
+        );
+
+        FreeStudyController controller =
+                new FreeStudyController(freeStudyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/free-study/collections/collection-1/cards/card-1/back")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(freeStudyService)
+                .freeBack(
+                        "collection-1",
+                        "card-1",
+                        authentication
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCardIsNotFoundInFreeBack() throws Exception {
+
+        FreeStudyService freeStudyService = mock(FreeStudyService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(freeStudyService.freeBack(
+                "collection-1",
+                "card-1",
+                authentication
+        )).thenThrow(
+                new CardNotFoundException("Card not found")
+        );
+
+        FreeStudyController controller =
+                new FreeStudyController(freeStudyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/free-study/collections/collection-1/cards/card-1/back")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(freeStudyService)
+                .freeBack(
+                        "collection-1",
+                        "card-1",
+                        authentication
+                );
+    }
+
+    @Test
     void shouldFindNextCardSuccessfullyInFreeNext() throws Exception {
 
         FreeStudyService freeStudyService = mock(FreeStudyService.class);
@@ -233,6 +440,114 @@ public class FreeStudyControllerTest {
                         .value("What is encapsulation?"))
                 .andExpect(jsonPath("$.back").value(nullValue()))
                 .andExpect(jsonPath("$.notes").value(nullValue()));
+
+        verify(freeStudyService)
+                .freeNext(
+                        "collection-1",
+                        "card-1",
+                        authentication
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInFreeNext() throws Exception {
+
+        FreeStudyService freeStudyService = mock(FreeStudyService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(freeStudyService.freeNext(
+                "collection-1",
+                "card-1",
+                authentication
+        )).thenThrow(
+                new UserNotFoundException("User not found")
+        );
+
+        FreeStudyController controller =
+                new FreeStudyController(freeStudyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/free-study/collections/collection-1/cards/card-1")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(freeStudyService)
+                .freeNext(
+                        "collection-1",
+                        "card-1",
+                        authentication
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCollectionIsNotFoundInFreeNext() throws Exception {
+
+        FreeStudyService freeStudyService = mock(FreeStudyService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(freeStudyService.freeNext(
+                "collection-1",
+                "card-1",
+                authentication
+        )).thenThrow(
+                new CollectionNotFoundException("Collection not found")
+        );
+
+        FreeStudyController controller =
+                new FreeStudyController(freeStudyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/free-study/collections/collection-1/cards/card-1")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(freeStudyService)
+                .freeNext(
+                        "collection-1",
+                        "card-1",
+                        authentication
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCardIsNotFoundInFreeNext() throws Exception {
+
+        FreeStudyService freeStudyService = mock(FreeStudyService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(freeStudyService.freeNext(
+                "collection-1",
+                "card-1",
+                authentication
+        )).thenThrow(
+                new CardNotFoundException("Card not found")
+        );
+
+        FreeStudyController controller =
+                new FreeStudyController(freeStudyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/free-study/collections/collection-1/cards/card-1")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
 
         verify(freeStudyService)
                 .freeNext(

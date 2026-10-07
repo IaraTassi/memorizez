@@ -3,7 +3,11 @@ package com.memorizez.memorizez.card.controller;
 import com.memorizez.memorizez.card.dto.CardResponse;
 import com.memorizez.memorizez.card.dto.CreateCardRequest;
 import com.memorizez.memorizez.card.dto.UpdateCardRequest;
+import com.memorizez.memorizez.card.exception.CardNotFoundException;
 import com.memorizez.memorizez.card.service.CardService;
+import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
+import com.memorizez.memorizez.exception.GlobalExceptionHandler;
+import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Page;
@@ -39,6 +43,7 @@ public class CardControllerTest {
                     .setCustomArgumentResolvers(
                             new PageableHandlerMethodArgumentResolver()
                     )
+                    .setControllerAdvice(new GlobalExceptionHandler())
                     .build();
 
     @Test
@@ -63,6 +68,112 @@ public class CardControllerTest {
         verify(cardService).create(eq(collectionId), any(CreateCardRequest.class), eq(authentication));
     }
 
+    @Test
+    void shouldReturnBadRequestWhenCreateCardRequestIsInvalid() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        String collectionId = "collection-1";
+
+        mockMvc.perform(
+                        post(
+                                "/collections/{collectionId}/cards",
+                                collectionId
+                        )
+                                .principal(authentication)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                    "front": "",
+                                    "back": "Valid back",
+                                    "notes": "Valid notes"
+                                }
+                                """)
+                )
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(cardService);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInCreateCard() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        String collectionId = "collection-1";
+
+        doThrow(new UserNotFoundException("User not found"))
+                .when(cardService)
+                .create(
+                        eq(collectionId),
+                        any(CreateCardRequest.class),
+                        eq(authentication)
+                );
+
+        mockMvc.perform(
+                        post(
+                                "/collections/{collectionId}/cards",
+                                collectionId
+                        )
+                                .principal(authentication)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                    "front": "What is inheritance?",
+                                    "back": "Inheritance allows a class to reuse attributes and methods.",
+                                    "notes": "Valid notes"
+                                }
+                                """)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(cardService)
+                .create(
+                        eq(collectionId),
+                        any(CreateCardRequest.class),
+                        eq(authentication)
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCollectionIsNotFoundInCreateCard() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        String collectionId = "collection-1";
+
+        doThrow(new CollectionNotFoundException("Collection not found"))
+                .when(cardService)
+                .create(
+                        eq(collectionId),
+                        any(CreateCardRequest.class),
+                        eq(authentication)
+                );
+
+        mockMvc.perform(
+                        post(
+                                "/collections/{collectionId}/cards",
+                                collectionId
+                        )
+                                .principal(authentication)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                    "front": "What is inheritance?",
+                                    "back": "Inheritance allows a class to reuse attributes and methods.",
+                                    "notes": "Valid notes"
+                                }
+                                """)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(cardService)
+                .create(
+                        eq(collectionId),
+                        any(CreateCardRequest.class),
+                        eq(authentication)
+                );
+    }
 
     @Test
     void shouldFindAllCardsSuccessfully() throws Exception {
@@ -127,6 +238,70 @@ public class CardControllerTest {
     }
 
     @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInFindAllCards() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        String collectionId = "collection-1";
+
+        when(cardService.findAll(
+                eq(collectionId),
+                any(Pageable.class),
+                eq(authentication)
+        )).thenThrow(
+                new UserNotFoundException("User not found")
+        );
+
+        mockMvc.perform(
+                        get(
+                                "/collections/{collectionId}/cards",
+                                collectionId
+                        )
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(cardService)
+                .findAll(
+                        eq(collectionId),
+                        any(Pageable.class),
+                        eq(authentication)
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCollectionIsNotFoundInFindAllCards() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        String collectionId = "collection-1";
+
+        when(cardService.findAll(
+                eq(collectionId),
+                any(Pageable.class),
+                eq(authentication)
+        )).thenThrow(
+                new CollectionNotFoundException("Collection not found")
+        );
+
+        mockMvc.perform(
+                        get(
+                                "/collections/{collectionId}/cards",
+                                collectionId
+                        )
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(cardService)
+                .findAll(
+                        eq(collectionId),
+                        any(Pageable.class),
+                        eq(authentication)
+                );
+    }
+
+    @Test
     void shouldUpdateCardSuccessfully() throws Exception {
 
         Authentication authentication = mock(Authentication.class);
@@ -157,6 +332,166 @@ public class CardControllerTest {
                 );
     }
 
+    @Test
+    void shouldReturnBadRequestWhenUpdateCardRequestIsInvalid() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        mockMvc.perform(
+                        put(
+                                "/collections/{collectionId}/cards/{cardId}",
+                                collectionId,
+                                cardId
+                        )
+                                .principal(authentication)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                    "front": "",
+                                    "back": "Valid back",
+                                    "notes": "Valid notes"
+                                }
+                                """)
+                )
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(cardService);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInUpdateCard() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        doThrow(new UserNotFoundException("User not found"))
+                .when(cardService)
+                .update(
+                        eq(collectionId),
+                        eq(cardId),
+                        any(UpdateCardRequest.class),
+                        eq(authentication)
+                );
+
+        mockMvc.perform(
+                        put(
+                                "/collections/{collectionId}/cards/{cardId}",
+                                collectionId,
+                                cardId
+                        )
+                                .principal(authentication)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                    "front": "What is inheritance?",
+                                    "back": "Inheritance allows a class to reuse attributes and methods.",
+                                    "notes": "Valid notes"
+                                }
+                                """)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(cardService)
+                .update(
+                        eq(collectionId),
+                        eq(cardId),
+                        any(UpdateCardRequest.class),
+                        eq(authentication)
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCollectionIsNotFoundInUpdateCard() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        doThrow(new CollectionNotFoundException("Collection not found"))
+                .when(cardService)
+                .update(
+                        eq(collectionId),
+                        eq(cardId),
+                        any(UpdateCardRequest.class),
+                        eq(authentication)
+                );
+
+        mockMvc.perform(
+                        put(
+                                "/collections/{collectionId}/cards/{cardId}",
+                                collectionId,
+                                cardId
+                        )
+                                .principal(authentication)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                    "front": "What is inheritance?",
+                                    "back": "Inheritance allows a class to reuse attributes and methods.",
+                                    "notes": "Valid notes"
+                                }
+                                """)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(cardService)
+                .update(
+                        eq(collectionId),
+                        eq(cardId),
+                        any(UpdateCardRequest.class),
+                        eq(authentication)
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCardIsNotFoundInUpdateCard() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        doThrow(new CardNotFoundException("Card not found"))
+                .when(cardService)
+                .update(
+                        eq(collectionId),
+                        eq(cardId),
+                        any(UpdateCardRequest.class),
+                        eq(authentication)
+                );
+
+        mockMvc.perform(
+                        put(
+                                "/collections/{collectionId}/cards/{cardId}",
+                                collectionId,
+                                cardId
+                        )
+                                .principal(authentication)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                    "front": "What is inheritance?",
+                                    "back": "Inheritance allows a class to reuse attributes and methods.",
+                                    "notes": "Valid notes"
+                                }
+                                """)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(cardService)
+                .update(
+                        eq(collectionId),
+                        eq(cardId),
+                        any(UpdateCardRequest.class),
+                        eq(authentication)
+                );
+    }
 
     @Test
     void shouldDeleteCardSuccessfully() throws Exception {
@@ -174,4 +509,107 @@ public class CardControllerTest {
         verify(cardService)
                 .delete(eq(collectionId), eq(cardId), eq(authentication));
     }
+
+    @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInDeleteCard() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        doThrow(new UserNotFoundException("User not found"))
+                .when(cardService)
+                .delete(
+                        eq(collectionId),
+                        eq(cardId),
+                        eq(authentication)
+                );
+
+        mockMvc.perform(
+                        delete(
+                                "/collections/{collectionId}/cards/{cardId}",
+                                collectionId,
+                                cardId
+                        )
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(cardService)
+                .delete(
+                        eq(collectionId),
+                        eq(cardId),
+                        eq(authentication)
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCollectionIsNotFoundInDeleteCard() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        doThrow(new CollectionNotFoundException("Collection not found"))
+                .when(cardService)
+                .delete(
+                        eq(collectionId),
+                        eq(cardId),
+                        eq(authentication)
+                );
+
+        mockMvc.perform(
+                        delete(
+                                "/collections/{collectionId}/cards/{cardId}",
+                                collectionId,
+                                cardId
+                        )
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(cardService)
+                .delete(
+                        eq(collectionId),
+                        eq(cardId),
+                        eq(authentication)
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCardIsNotFoundInDeleteCard() throws Exception {
+
+        Authentication authentication = mock(Authentication.class);
+
+        String collectionId = "collection-1";
+        String cardId = "card-1";
+
+        doThrow(new CardNotFoundException("Card not found"))
+                .when(cardService)
+                .delete(
+                        eq(collectionId),
+                        eq(cardId),
+                        eq(authentication)
+                );
+
+        mockMvc.perform(
+                        delete(
+                                "/collections/{collectionId}/cards/{cardId}",
+                                collectionId,
+                                cardId
+                        )
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(cardService)
+                .delete(
+                        eq(collectionId),
+                        eq(cardId),
+                        eq(authentication)
+                );
+    }
+
 }

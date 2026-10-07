@@ -1,15 +1,20 @@
 package com.memorizez.memorizez.history.controller;
 
+import com.memorizez.memorizez.card.exception.CardNotFoundException;
+import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
+import com.memorizez.memorizez.exception.GlobalExceptionHandler;
 import com.memorizez.memorizez.history.HistoryAction;
 import com.memorizez.memorizez.history.dto.HistoryCardDetailResponse;
 import com.memorizez.memorizez.history.dto.HistoryCardResponse;
 import com.memorizez.memorizez.history.dto.HistoryCollectionResponse;
 import com.memorizez.memorizez.history.dto.HistoryResponse;
 import com.memorizez.memorizez.history.service.HistoryService;
+import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,6 +30,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class HistoryControllerTest {
+
+    private final HistoryController historyController = mock(HistoryController.class);
+    MockMvc mockMvc = MockMvcBuilders
+            .standaloneSetup(historyController)
+            .setControllerAdvice(new GlobalExceptionHandler())
+            .build();
 
     @Test
     void shouldFindAllHistoryCollectionsSuccessfully() throws Exception {
@@ -68,6 +79,35 @@ public class HistoryControllerTest {
                 .andExpect(jsonPath("$[1].id").value("collection-2"))
                 .andExpect(jsonPath("$[1].name").value("POO"))
                 .andExpect(jsonPath("$[1].cardCount").value(56));
+
+        verify(historyService)
+                .findAllCollections(authentication);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInFindAllHistoryCollections() throws Exception {
+
+        HistoryService historyService = mock(HistoryService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(historyService.findAllCollections(authentication))
+                .thenThrow(
+                        new UserNotFoundException("User not found")
+                );
+
+        HistoryController controller =
+                new HistoryController(historyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/history/collections")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
 
         verify(historyService)
                 .findAllCollections(authentication);
@@ -152,6 +192,84 @@ public class HistoryControllerTest {
     }
 
     @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInFindAllHistoryCards() throws Exception {
+
+        HistoryService historyService = mock(HistoryService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(historyService.findAllCards(
+                eq(authentication),
+                eq("collection-1"),
+                any(Pageable.class)
+        )).thenThrow(
+                new UserNotFoundException("User not found")
+        );
+
+        HistoryController controller =
+                new HistoryController(historyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setCustomArgumentResolvers(
+                        new PageableHandlerMethodArgumentResolver()
+                )
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/history/collections/collection-1/cards")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(historyService)
+                .findAllCards(
+                        eq(authentication),
+                        eq("collection-1"),
+                        any(Pageable.class)
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCollectionIsNotFoundInFindAllHistoryCards() throws Exception {
+
+        HistoryService historyService = mock(HistoryService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(historyService.findAllCards(
+                eq(authentication),
+                eq("collection-1"),
+                any(Pageable.class)
+        )).thenThrow(
+                new CollectionNotFoundException("Collection not found")
+        );
+
+        HistoryController controller =
+                new HistoryController(historyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setCustomArgumentResolvers(
+                        new PageableHandlerMethodArgumentResolver()
+                )
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/history/collections/collection-1/cards")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(historyService)
+                .findAllCards(
+                        eq(authentication),
+                        eq("collection-1"),
+                        any(Pageable.class)
+                );
+    }
+
+    @Test
     void shouldFindHistoryCardSuccessfully() throws Exception {
 
         HistoryService historyService = mock(HistoryService.class);
@@ -202,6 +320,114 @@ public class HistoryControllerTest {
                         authentication,
                         "collection-1",
                         "card-1"
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInFindHistoryCard() throws Exception {
+
+        HistoryService historyService = mock(HistoryService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(historyService.findCard(
+                eq(authentication),
+                eq("collection-1"),
+                eq("card-1")
+        )).thenThrow(
+                new UserNotFoundException("User not found")
+        );
+
+        HistoryController controller =
+                new HistoryController(historyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/history/collections/collection-1/cards/card-1")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(historyService)
+                .findCard(
+                        eq(authentication),
+                        eq("collection-1"),
+                        eq("card-1")
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCollectionIsNotFoundInFindHistoryCard() throws Exception {
+
+        HistoryService historyService = mock(HistoryService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(historyService.findCard(
+                eq(authentication),
+                eq("collection-1"),
+                eq("card-1")
+        )).thenThrow(
+                new CollectionNotFoundException("Collection not found")
+        );
+
+        HistoryController controller =
+                new HistoryController(historyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/history/collections/collection-1/cards/card-1")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(historyService)
+                .findCard(
+                        eq(authentication),
+                        eq("collection-1"),
+                        eq("card-1")
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCardIsNotFoundInFindHistoryCard() throws Exception {
+
+        HistoryService historyService = mock(HistoryService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(historyService.findCard(
+                eq(authentication),
+                eq("collection-1"),
+                eq("card-1")
+        )).thenThrow(
+                new CardNotFoundException("Card not found")
+        );
+
+        HistoryController controller =
+                new HistoryController(historyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/history/collections/collection-1/cards/card-1")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(historyService)
+                .findCard(
+                        eq(authentication),
+                        eq("collection-1"),
+                        eq("card-1")
                 );
     }
 
@@ -272,6 +498,129 @@ public class HistoryControllerTest {
                         "collection-1",
                         "card-1",
                         PageRequest.of(0, 10)
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUserIsNotFoundInFindHistory() throws Exception {
+
+        HistoryService historyService = mock(HistoryService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(historyService.findHistory(
+                eq(authentication),
+                eq("collection-1"),
+                eq("card-1"),
+                any(Pageable.class)
+        )).thenThrow(
+                new UserNotFoundException("User not found")
+        );
+
+        HistoryController controller =
+                new HistoryController(historyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setCustomArgumentResolvers(
+                        new PageableHandlerMethodArgumentResolver()
+                )
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/history/collections/collection-1/cards/card-1/history")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(historyService)
+                .findHistory(
+                        eq(authentication),
+                        eq("collection-1"),
+                        eq("card-1"),
+                        any(Pageable.class)
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCollectionIsNotFoundInFindHistory() throws Exception {
+
+        HistoryService historyService = mock(HistoryService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(historyService.findHistory(
+                eq(authentication),
+                eq("collection-1"),
+                eq("card-1"),
+                any(Pageable.class)
+        )).thenThrow(
+                new CollectionNotFoundException("Collection not found")
+        );
+
+        HistoryController controller =
+                new HistoryController(historyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setCustomArgumentResolvers(
+                        new PageableHandlerMethodArgumentResolver()
+                )
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/history/collections/collection-1/cards/card-1/history")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(historyService)
+                .findHistory(
+                        eq(authentication),
+                        eq("collection-1"),
+                        eq("card-1"),
+                        any(Pageable.class)
+                );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCardIsNotFoundInFindHistory() throws Exception {
+
+        HistoryService historyService = mock(HistoryService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(historyService.findHistory(
+                eq(authentication),
+                eq("collection-1"),
+                eq("card-1"),
+                any(Pageable.class)
+        )).thenThrow(
+                new CardNotFoundException("Card not found")
+        );
+
+        HistoryController controller =
+                new HistoryController(historyService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setCustomArgumentResolvers(
+                        new PageableHandlerMethodArgumentResolver()
+                )
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        mockMvc.perform(
+                        get("/history/collections/collection-1/cards/card-1/history")
+                                .principal(authentication)
+                )
+                .andExpect(status().isNotFound());
+
+        verify(historyService)
+                .findHistory(
+                        eq(authentication),
+                        eq("collection-1"),
+                        eq("card-1"),
+                        any(Pageable.class)
                 );
     }
 
