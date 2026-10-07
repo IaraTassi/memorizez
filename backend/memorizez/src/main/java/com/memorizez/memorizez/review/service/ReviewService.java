@@ -6,18 +6,21 @@ import com.memorizez.memorizez.card.repository.CardRepository;
 import com.memorizez.memorizez.collection.Collection;
 import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
+import com.memorizez.memorizez.history.History;
+import com.memorizez.memorizez.history.HistoryAction;
+import com.memorizez.memorizez.history.repository.HistoryRepository;
 import com.memorizez.memorizez.review.Review;
 import com.memorizez.memorizez.review.ReviewResult;
+import com.memorizez.memorizez.review.ReviewSession;
 import com.memorizez.memorizez.review.ReviewStage;
-import com.memorizez.memorizez.review.dto.ReviewResponse;
-import com.memorizez.memorizez.review.dto.ReviewResultRequest;
-import com.memorizez.memorizez.review.dto.ReviewResultResponse;
+import com.memorizez.memorizez.review.dto.*;
 import com.memorizez.memorizez.review.exception.CardNotAvailableForReviewException;
 import com.memorizez.memorizez.review.exception.CardNotRevealedException;
 import com.memorizez.memorizez.review.repository.ReviewRepository;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,16 +36,24 @@ public class ReviewService {
     private final CardRepository cardRepository;
     private final CollectionRepository collectionRepository;
     private final UserRepository userRepository;
+    private final HistoryRepository historyRepository;
+    private final HttpSession httpSession;
+
+    private static final String REVIEW_SESSION_ATTRIBUTE =
+            "memorizezReviewSession";
 
     public ReviewService(
             ReviewRepository reviewRepository,
             CardRepository cardRepository,
             CollectionRepository collectionRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            HistoryRepository historyRepository, HttpSession httpSession) {
         this.reviewRepository = reviewRepository;
         this.cardRepository = cardRepository;
         this.collectionRepository = collectionRepository;
         this.userRepository = userRepository;
+        this.historyRepository = historyRepository;
+        this.httpSession = httpSession;
     }
 
     public List<ReviewResponse> findAvailableForReview(
@@ -71,7 +82,8 @@ public class ReviewService {
                             review != null ? review.getStage() : null,
                             review != null
                                     ? review.getNextReviewDate()
-                                    : null
+                                    : null,
+                            null
                     );
                 })
                 .toList();
@@ -96,6 +108,21 @@ public class ReviewService {
                 .findByIdAndCollection(cardId, collection)
                 .orElseThrow(() ->
                         new CardNotFoundException("Card not found"));
+
+        ReviewSession reviewSession =
+                (ReviewSession) httpSession.getAttribute(
+                        REVIEW_SESSION_ATTRIBUTE
+                );
+
+        if (reviewSession == null
+                || !collectionId.equals(reviewSession.getCollectionId())
+                || reviewSession.getCardIds().isEmpty()
+                || !cardId.equals(reviewSession.getCurrentCardId())) {
+
+            throw new CardNotAvailableForReviewException(
+                    "Card is not part of the active review session"
+            );
+        }
 
         Review review = reviewRepository
                 .findByCard(card)
@@ -127,7 +154,8 @@ public class ReviewService {
                 card.getBack(),
                 card.getNotes(),
                 review.getStage(),
-                review.getNextReviewDate()
+                review.getNextReviewDate(),
+                null
         );
     }
 
@@ -148,6 +176,21 @@ public class ReviewService {
                         new CollectionNotFoundException(
                                 "Collection not found"
                         ));
+
+        ReviewSession reviewSession =
+                (ReviewSession) httpSession.getAttribute(
+                        REVIEW_SESSION_ATTRIBUTE
+                );
+
+        if (reviewSession == null
+                || !collectionId.equals(reviewSession.getCollectionId())
+                || reviewSession.getCardIds().isEmpty()
+                || !cardId.equals(reviewSession.getCurrentCardId())) {
+
+            throw new CardNotAvailableForReviewException(
+                    "Card is not part of the active review session"
+            );
+        }
 
         Card card = cardRepository
                 .findByIdAndCollection(cardId, collection)
@@ -174,10 +217,8 @@ public class ReviewService {
             if (review.getStage() == null) {
                 review.setStage(ReviewStage.ONE_DAY);
 
-            } else if (review.getStage() != ReviewStage.THIRTY_DAYS) {
-                review.setStage(
-                        ReviewStage.values()[review.getStage().ordinal() + 1]
-                );
+            } else {
+                review.setStage(review.getStage().next());
             }
 
         } else {
@@ -194,19 +235,56 @@ public class ReviewService {
 
         review.setRevealedAt(null);
 
+        HistoryAction action =
+                request.getResult() == ReviewResult.REMEMBERED
+                        ? HistoryAction.REMEMBERED
+                        : HistoryAction.NOT_REMEMBERED;
+
+        historyRepository.save(
+                new History(
+                        null,
+                        card,
+                        action,
+                        LocalDateTime.now()
+                )
+        );
+
         reviewRepository.save(review);
         cardRepository.save(card);
 
-        List<Card> nextCards = cardRepository.findAvailableForReview(
-                user,
-                LocalDate.now()
-        );
+        reviewSession.advance();
 
-        if (nextCards.isEmpty()) {
-            return new ReviewResultResponse(true, null);
+        ReviewProgressResponse progress =
+                new ReviewProgressResponse(
+                        reviewSession.getCompletedCards(),
+                        reviewSession.getTotalCards(),
+                        reviewSession.getPercentage()
+                );
+
+        if (reviewSession.getCurrentIndex()
+                >= reviewSession.getTotalCards()) {
+
+            httpSession.removeAttribute(
+                    REVIEW_SESSION_ATTRIBUTE
+            );
+
+            return new ReviewResultResponse(
+                    true,
+                    null,
+                    progress
+            );
         }
 
-        Card nextCard = nextCards.get(0);
+        String nextCardId =
+                reviewSession.getCurrentCardId();
+
+        Card nextCard = cardRepository
+                .findByIdAndCollection(
+                        nextCardId,
+                        collection
+                )
+                .orElseThrow(() ->
+                        new CardNotFoundException("Card not found"));
 
         Review nextReview = reviewRepository
                 .findByCard(nextCard)
@@ -218,12 +296,112 @@ public class ReviewService {
                 null,
                 null,
                 nextReview != null ? nextReview.getStage() : null,
-                nextReview != null ? nextReview.getNextReviewDate() : null
+                nextReview != null
+                        ? nextReview.getNextReviewDate()
+                        : null,
+                null
         );
 
         return new ReviewResultResponse(
                 false,
-                nextCardResponse
+                nextCardResponse,
+                progress
+        );
+
+    }
+
+    public ReviewResponse startReview(
+            String collectionId,
+            Authentication authentication) {
+
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found"));
+
+        Collection collection = collectionRepository
+                .findByIdAndUser(collectionId, user)
+                .orElseThrow(() ->
+                        new CollectionNotFoundException("Collection not found"));
+
+        List<Card> cards = cardRepository.findAvailableForReviewByCollection(
+                collection,
+                LocalDate.now()
+        );
+
+        if (cards.isEmpty()) {
+            throw new CardNotAvailableForReviewException(
+                    "No cards available for review"
+            );
+        }
+
+        ReviewSession reviewSession =
+                new ReviewSession(
+                        collectionId,
+                        cards.stream()
+                                .map(Card::getId)
+                                .toList()
+                );
+
+        httpSession.setAttribute(
+                REVIEW_SESSION_ATTRIBUTE,
+                reviewSession
+        );
+
+        Card firstCard = cards.get(0);
+
+        Review review = reviewRepository
+                .findByCard(firstCard)
+                .orElse(null);
+
+        ReviewProgressResponse progress =
+                new ReviewProgressResponse(
+                        0,
+                        reviewSession.getTotalCards(),
+                        0
+                );
+
+        return new ReviewResponse(
+                firstCard.getId(),
+                firstCard.getFront(),
+                null,
+                null,
+                review != null ? review.getStage() : null,
+                review != null
+                        ? review.getNextReviewDate()
+                        : null,
+                progress
         );
     }
+
+    public List<ReviewCollectionResponse> findCollectionsForReview(
+            Authentication authentication) {
+
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found"));
+
+        LocalDate today = LocalDate.now();
+
+        return collectionRepository
+                .findAllByUserOrderByCreatedAtDesc(user)
+                .stream()
+                .map(collection -> {
+
+                    long availableCardCount =
+                            cardRepository
+                                    .findAvailableForReviewByCollection(
+                                            collection,
+                                            today
+                                    )
+                                    .size();
+
+                    return new ReviewCollectionResponse(
+                            collection.getId(),
+                            collection.getName(),
+                            availableCardCount
+                    );
+                })
+                .toList();
+    }
+
 }

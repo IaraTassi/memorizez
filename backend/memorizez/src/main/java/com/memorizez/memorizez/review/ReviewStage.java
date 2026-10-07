@@ -16,4 +16,12 @@ public enum ReviewStage {
     public int getIntervalDays() {
         return intervalDays;
     }
+
+    public ReviewStage next() {
+        if (this == THIRTY_DAYS) {
+            return THIRTY_DAYS;
+        }
+
+        return ReviewStage.values()[ordinal() + 1];
+    }
 }

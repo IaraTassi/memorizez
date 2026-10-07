@@ -1,5 +1,6 @@
 package com.memorizez.memorizez.review.controller;
 
+import com.memorizez.memorizez.review.dto.ReviewCollectionResponse;
 import com.memorizez.memorizez.review.dto.ReviewResponse;
 import com.memorizez.memorizez.review.dto.ReviewResultRequest;
 import com.memorizez.memorizez.review.dto.ReviewResultResponse;
@@ -27,6 +28,15 @@ public class ReviewController {
 
         return ResponseEntity.ok(
                 reviewService.findAvailableForReview(authentication)
+        );
+    }
+
+    @GetMapping("/collections")
+    public ResponseEntity<List<ReviewCollectionResponse>> findCollectionsForReview(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                reviewService.findCollectionsForReview(authentication)
         );
     }
 

@@ -3,9 +3,7 @@ package com.memorizez.memorizez.review.controller;
 import com.memorizez.memorizez.exception.GlobalExceptionHandler;
 import com.memorizez.memorizez.review.ReviewResult;
 import com.memorizez.memorizez.review.ReviewStage;
-import com.memorizez.memorizez.review.dto.ReviewResponse;
-import com.memorizez.memorizez.review.dto.ReviewResultRequest;
-import com.memorizez.memorizez.review.dto.ReviewResultResponse;
+import com.memorizez.memorizez.review.dto.*;
 import com.memorizez.memorizez.review.exception.CardNotRevealedException;
 import com.memorizez.memorizez.review.service.ReviewService;
 
@@ -38,7 +36,8 @@ public class ReviewControllerTest {
                 null,
                 null,
                 ReviewStage.ONE_DAY,
-                LocalDate.now()
+                LocalDate.now(),
+                null
         );
 
         ReviewResponse review2 = new ReviewResponse(
@@ -47,7 +46,8 @@ public class ReviewControllerTest {
                 null,
                 null,
                 ReviewStage.SEVEN_DAYS,
-                LocalDate.now()
+                LocalDate.now(),
+                null
         );
 
         when(reviewService.findAvailableForReview(authentication))
@@ -77,6 +77,44 @@ public class ReviewControllerTest {
     }
 
     @Test
+    void shouldFindCollectionsForReviewSuccessfully() throws Exception {
+
+        ReviewService reviewService = mock(ReviewService.class);
+        Authentication authentication = mock(Authentication.class);
+
+        List<ReviewCollectionResponse> collections = List.of(
+                new ReviewCollectionResponse("collection-1", "POO", 2),
+                new ReviewCollectionResponse("collection-2", "Java", 0)
+        );
+
+        when(reviewService.findCollectionsForReview(authentication))
+                .thenReturn(collections);
+
+        ReviewController controller =
+                new ReviewController(reviewService);
+
+        MockMvc mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .build();
+
+        mockMvc.perform(
+                        get("/reviews/collections")
+                                .principal(authentication)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value("collection-1"))
+                .andExpect(jsonPath("$[0].name").value("POO"))
+                .andExpect(jsonPath("$[0].availableCardCount").value(2))
+                .andExpect(jsonPath("$[1].id").value("collection-2"))
+                .andExpect(jsonPath("$[1].name").value("Java"))
+                .andExpect(jsonPath("$[1].availableCardCount").value(0));
+
+        verify(reviewService)
+                .findCollectionsForReview(authentication);
+    }
+
+    @Test
     void shouldRevealCardSuccessfully() throws  Exception {
 
         ReviewService reviewService = mock(ReviewService.class);
@@ -88,7 +126,8 @@ public class ReviewControllerTest {
                 "O que é encapsulamento",
                 "Princípio da POO.",
                 ReviewStage.ONE_DAY,
-                LocalDate.now()
+                LocalDate.now(),
+                null
         );
 
         when(reviewService.reveal(
@@ -140,11 +179,23 @@ public class ReviewControllerTest {
                 null,
                 null,
                 ReviewStage.ONE_DAY,
-                LocalDate.now()
+                LocalDate.now(),
+                null
         );
 
+        ReviewProgressResponse progress =
+                new ReviewProgressResponse(
+                        1,
+                        2,
+                        50
+                );
+
         ReviewResultResponse response =
-                new ReviewResultResponse(false, nextCard);
+                new ReviewResultResponse(
+                        false,
+                        nextCard,
+                        progress
+                );
 
         when(reviewService.submitResult(
                 eq("collection-1"),
@@ -165,13 +216,16 @@ public class ReviewControllerTest {
                                 .principal(authentication)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
-                            {
-                                "result": "REMEMBERED"
-                            }
-                            """)
+                    {
+                        "result": "REMEMBERED"
+                    }
+                    """)
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.completed").value(false))
+                .andExpect(jsonPath("$.progress.completedCards").value(1))
+                .andExpect(jsonPath("$.progress.totalCards").value(2))
+                .andExpect(jsonPath("$.progress.percentage").value(50))
                 .andExpect(jsonPath("$.nextCard.cardId")
                         .value("card-2"))
                 .andExpect(jsonPath("$.nextCard.front")

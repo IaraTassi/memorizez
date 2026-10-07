@@ -12,6 +12,7 @@ public class ReviewResponse {
     private String notes;
     private ReviewStage stage;
     private LocalDate nextReviewDate;
+    private ReviewProgressResponse progress;
 
     public ReviewResponse(
             String cardId,
@@ -19,13 +20,15 @@ public class ReviewResponse {
             String back,
             String notes,
             ReviewStage stage,
-            LocalDate nextReviewDate) {
+            LocalDate nextReviewDate, ReviewProgressResponse progress) {
         this.cardId = cardId;
         this.front = front;
         this.back = back;
         this.notes = notes;
         this.stage = stage;
         this.nextReviewDate = nextReviewDate;
+        this.progress = progress;
+
     }
 
     public String getCardId() {
@@ -50,5 +53,9 @@ public class ReviewResponse {
 
     public LocalDate getNextReviewDate() {
         return nextReviewDate;
+    }
+
+    public ReviewProgressResponse getProgress() {
+        return progress;
     }
 }

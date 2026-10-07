@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -51,4 +52,23 @@ public interface CardRepository extends JpaRepository<Card, String> {
             LocalDate today
     );
 
+    @Query("""
+        SELECT c
+        FROM Card c
+        LEFT JOIN Review r ON r.card = c
+        WHERE c.collection = :collection
+          AND (
+              r IS NULL
+              OR r.stage IS NULL
+              OR r.nextReviewDate <= :today
+          )
+        ORDER BY
+            CASE WHEN r.nextReviewDate IS NULL THEN 0 ELSE 1 END,
+            r.nextReviewDate ASC,
+            c.createdAt ASC
+        """)
+    List<Card> findAvailableForReviewByCollection(
+            @Param("collection") Collection collection,
+            @Param("today") LocalDate today
+    );
 }

@@ -4,12 +4,15 @@ public class ReviewResultResponse {
 
     private boolean completed;
     private ReviewResponse nextCard;
+    private ReviewProgressResponse progress;
 
     public ReviewResultResponse(
             boolean completed,
-            ReviewResponse nextCard) {
+            ReviewResponse nextCard,
+            ReviewProgressResponse progress) {
         this.completed = completed;
         this.nextCard = nextCard;
+        this.progress = progress;
     }
 
     public boolean isCompleted() {
@@ -18,5 +21,9 @@ public class ReviewResultResponse {
 
     public ReviewResponse getNextCard() {
         return nextCard;
+    }
+
+    public ReviewProgressResponse getProgress() {
+        return progress;
     }
 }
