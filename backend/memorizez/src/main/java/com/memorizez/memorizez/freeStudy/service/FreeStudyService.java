@@ -6,6 +6,7 @@ import com.memorizez.memorizez.card.repository.CardRepository;
 import com.memorizez.memorizez.collection.Collection;
 import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
+import com.memorizez.memorizez.freeStudy.dto.FreeStudyCollectionResponse;
 import com.memorizez.memorizez.freeStudy.dto.FreeStudyResponse;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
@@ -30,6 +31,27 @@ public class FreeStudyService {
         this.userRepository = userRepository;
         this.collectionRepository = collectionRepository;
         this.cardRepository = cardRepository;
+    }
+
+    public List<FreeStudyCollectionResponse> findCollectionsForFreeStudy(
+            Authentication authentication) {
+
+        User user = userRepository
+                .findByEmail(authentication.getName())
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found"));
+
+        return collectionRepository
+                .findAllByUserOrderByCreatedAtDesc(user)
+                .stream()
+                .map(collection ->
+                        new FreeStudyCollectionResponse(
+                                collection.getId(),
+                                collection.getName(),
+                                cardRepository.countByCollection(collection)
+                        )
+                )
+                .toList();
     }
 
     public Optional<FreeStudyResponse> findFirstCard(

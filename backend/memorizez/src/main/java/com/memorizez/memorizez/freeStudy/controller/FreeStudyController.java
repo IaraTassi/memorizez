@@ -1,5 +1,6 @@
 package com.memorizez.memorizez.freeStudy.controller;
 
+import com.memorizez.memorizez.freeStudy.dto.FreeStudyCollectionResponse;
 import com.memorizez.memorizez.freeStudy.dto.FreeStudyResponse;
 import com.memorizez.memorizez.freeStudy.service.FreeStudyService;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/free-study")
 public class FreeStudyController {
@@ -17,6 +20,15 @@ public class FreeStudyController {
 
     public FreeStudyController(FreeStudyService freeStudyService) {
         this.freeStudyService = freeStudyService;
+    }
+
+    @GetMapping("/collections")
+    public ResponseEntity<List<FreeStudyCollectionResponse>> findCollectionsForFreeStudy(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                freeStudyService.findCollectionsForFreeStudy(authentication)
+        );
     }
 
     @GetMapping("/collections/{collectionId}")

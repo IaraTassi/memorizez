@@ -6,6 +6,7 @@ import com.memorizez.memorizez.card.repository.CardRepository;
 import com.memorizez.memorizez.collection.Collection;
 import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
+import com.memorizez.memorizez.freeStudy.dto.FreeStudyCollectionResponse;
 import com.memorizez.memorizez.freeStudy.dto.FreeStudyResponse;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
@@ -20,6 +21,159 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class FreeStudyServiceTest {
+
+    @Test
+    void shouldFindCollectionsForFreeStudySuccessfully() {
+
+        UserRepository userRepository = mock(UserRepository.class);
+        CollectionRepository collectionRepository = mock(CollectionRepository.class);
+        CardRepository cardRepository = mock(CardRepository.class);
+        Authentication authentication = mock(Authentication.class);
+
+        User user = new User(
+                "Test User",
+                "test@memorizez.com",
+                "hashed-password"
+        );
+
+        Collection collection1 = new Collection();
+        collection1.setName("POO");
+        collection1.setUser(user);
+
+        Collection collection2 = new Collection();
+        collection2.setName("Java");
+        collection2.setUser(user);
+
+        when(authentication.getName())
+                .thenReturn("test@memorizez.com");
+
+        when(userRepository.findByEmail("test@memorizez.com"))
+                .thenReturn(Optional.of(user));
+
+        when(collectionRepository.findAllByUserOrderByCreatedAtDesc(user))
+                .thenReturn(List.of(collection1, collection2));
+
+        when(cardRepository.countByCollection(collection1))
+                .thenReturn(56L);
+
+        when(cardRepository.countByCollection(collection2))
+                .thenReturn(32L);
+
+        FreeStudyService service =
+                new FreeStudyService(
+                        userRepository,
+                        collectionRepository,
+                        cardRepository
+                );
+
+        List<FreeStudyCollectionResponse> result =
+                service.findCollectionsForFreeStudy(authentication);
+
+        assertEquals(2, result.size());
+
+        FreeStudyCollectionResponse response1 = result.get(0);
+
+        assertEquals(collection1.getId(), response1.getId());
+        assertEquals("POO", response1.getName());
+        assertEquals(56L, response1.getCardCount());
+
+        FreeStudyCollectionResponse response2 = result.get(1);
+
+        assertEquals(collection2.getId(), response2.getId());
+        assertEquals("Java", response2.getName());
+        assertEquals(32L, response2.getCardCount());
+
+        verify(userRepository)
+                .findByEmail("test@memorizez.com");
+
+        verify(collectionRepository)
+                .findAllByUserOrderByCreatedAtDesc(user);
+
+        verify(cardRepository)
+                .countByCollection(collection1);
+
+        verify(cardRepository)
+                .countByCollection(collection2);
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenUserHasNoCollectionsForFreeStudy() {
+
+        UserRepository userRepository = mock(UserRepository.class);
+        CollectionRepository collectionRepository = mock(CollectionRepository.class);
+        CardRepository cardRepository = mock(CardRepository.class);
+        Authentication authentication = mock(Authentication.class);
+
+        User user = new User(
+                "Test User",
+                "test@memorizez.com",
+                "hashed-password"
+        );
+
+        when(authentication.getName())
+                .thenReturn("test@memorizez.com");
+
+        when(userRepository.findByEmail("test@memorizez.com"))
+                .thenReturn(Optional.of(user));
+
+        when(collectionRepository.findAllByUserOrderByCreatedAtDesc(user))
+                .thenReturn(List.of());
+
+        FreeStudyService service =
+                new FreeStudyService(
+                        userRepository,
+                        collectionRepository,
+                        cardRepository
+                );
+
+        List<FreeStudyCollectionResponse> result =
+                service.findCollectionsForFreeStudy(authentication);
+
+        assertTrue(result.isEmpty());
+
+        verify(userRepository)
+                .findByEmail("test@memorizez.com");
+
+        verify(collectionRepository)
+                .findAllByUserOrderByCreatedAtDesc(user);
+
+        verifyNoInteractions(cardRepository);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUserIsNotFoundInFindCollectionsForFreeStudy() {
+
+        UserRepository userRepository = mock(UserRepository.class);
+        CollectionRepository collectionRepository = mock(CollectionRepository.class);
+        CardRepository cardRepository = mock(CardRepository.class);
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getName())
+                .thenReturn("unknown@memorizez.com");
+
+        when(userRepository.findByEmail("unknown@memorizez.com"))
+                .thenReturn(Optional.empty());
+
+        FreeStudyService service =
+                new FreeStudyService(
+                        userRepository,
+                        collectionRepository,
+                        cardRepository
+                );
+
+        assertThrows(
+                UserNotFoundException.class,
+                () -> service.findCollectionsForFreeStudy(authentication)
+        );
+
+        verify(userRepository)
+                .findByEmail("unknown@memorizez.com");
+
+        verifyNoInteractions(
+                collectionRepository,
+                cardRepository
+        );
+    }
 
     @Test
     void shouldFindFirstCardForFreeStudySuccessfully() {
