@@ -27,7 +27,7 @@ public class Card {
     @Column(nullable = true, length = 300)
     private String notes;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDate createdAt;
 
     @Column(nullable = false)

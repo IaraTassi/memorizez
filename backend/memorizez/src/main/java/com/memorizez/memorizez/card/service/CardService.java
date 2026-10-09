@@ -51,6 +51,7 @@ public class CardService {
         this.historyRepository = historyRepository;
     }
 
+    @Transactional
     public void create(
             String collectionId,
             CreateCardRequest request,
@@ -73,7 +74,16 @@ public class CardService {
 
         cardRepository.save(card);
 
+        historyRepository.save(
+                new History(
+                        null,
+                        card,
+                        HistoryAction.CREATED,
+                        LocalDateTime.now()
+                )
+        );
     }
+
 
     public Page<CardResponse> findAll(
             String collectionId,
@@ -89,7 +99,7 @@ public class CardService {
                 .orElseThrow(() -> new CollectionNotFoundException("Collection not found"));
 
         return cardRepository
-                .findAllByCollectionOrderByFrontAsc(collection, pageable)
+                .findAllByCollectionOrderByCreatedAtDescIdDesc(collection, pageable)
                 .map(card -> new CardResponse(
                         card.getId(),
                         card.getFront(),
@@ -157,15 +167,8 @@ public class CardService {
 
         if (review != null) {
             review.setRevealedAt(null);
-
-            if (review.getStage() != null) {
-                review.setStage(ReviewStage.ONE_DAY);
-                review.setNextReviewDate(
-                        LocalDate.now().plusDays(
-                                ReviewStage.ONE_DAY.getIntervalDays()
-                        )
-                );
-            }
+            review.setStage(ReviewStage.ONE_DAY);
+            review.setNextReviewDate(LocalDate.now().plusDays(1));
 
             reviewRepository.save(review);
         }

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.core.Authentication;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -168,6 +169,14 @@ public class CollectionServiceTest {
         when(cardRepository.countByCollection(collection2))
                 .thenReturn(1L);
 
+        LocalDate today = LocalDate.now();
+
+        when(cardRepository.findAvailableForReviewByCollection(collection1, today))
+                .thenReturn(List.of());
+
+        when(cardRepository.findAvailableForReviewByCollection(collection2, today))
+                .thenReturn(List.of());
+
         CollectionService service =
                 new CollectionService(
                         collectionRepository,
@@ -193,6 +202,9 @@ public class CollectionServiceTest {
                 response.get(1).getId()
         );
 
+        assertEquals(0, response.get(0).getAvailableCardCount());
+        assertEquals(0, response.get(1).getAvailableCardCount());
+
         verify(collectionRepository)
                 .findAllByUserOrderByCreatedAtDesc(user);
 
@@ -200,6 +212,12 @@ public class CollectionServiceTest {
                 .countByCollection(collection1);
         verify(cardRepository)
                 .countByCollection(collection2);
+
+        verify(cardRepository)
+                .findAvailableForReviewByCollection(collection1, today);
+
+        verify(cardRepository)
+                .findAvailableForReviewByCollection(collection2, today);
     }
 
     @Test

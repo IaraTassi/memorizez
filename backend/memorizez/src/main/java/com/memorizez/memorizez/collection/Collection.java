@@ -19,7 +19,7 @@ public class Collection {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDate createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

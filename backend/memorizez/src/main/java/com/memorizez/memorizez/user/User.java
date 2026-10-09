@@ -2,6 +2,7 @@ package com.memorizez.memorizez.user;
 
 import com.memorizez.memorizez.collection.Collection;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,7 @@ public class User {
     private String name;
 
     @Column(nullable = false, unique = true)
+    @Email
     private String email;
 
     @Column(nullable = false)

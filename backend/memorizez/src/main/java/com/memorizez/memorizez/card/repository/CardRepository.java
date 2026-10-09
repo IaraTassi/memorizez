@@ -16,7 +16,7 @@ import java.util.Optional;
 
 public interface CardRepository extends JpaRepository<Card, String> {
 
-    Page<Card> findAllByCollectionOrderByFrontAsc(
+    Page<Card> findAllByCollectionOrderByCreatedAtDescIdDesc(
             Collection collection,
             Pageable pageable
     );
@@ -25,8 +25,6 @@ public interface CardRepository extends JpaRepository<Card, String> {
             String id,
             Collection collection
     );
-
-    List<Card> findAllByCollection(Collection collection);
 
     List<Card> findAllByCollectionOrderByCreatedAtAsc(Collection collection);
 
@@ -40,12 +38,22 @@ public interface CardRepository extends JpaRepository<Card, String> {
       AND (
           r IS NULL
           OR r.stage IS NULL
+          OR r.nextReviewDate IS NULL
           OR r.nextReviewDate <= :today
       )
     ORDER BY
-        CASE WHEN r.nextReviewDate IS NULL THEN 0 ELSE 1 END,
+        CASE
+            WHEN r IS NOT NULL
+                 AND r.stage IS NOT NULL
+                 AND (r.nextReviewDate IS NULL
+                      OR r.nextReviewDate < :today)
+            THEN 0
+            WHEN r.nextReviewDate = :today THEN 1
+            ELSE 2
+        END,
         r.nextReviewDate ASC,
-        c.createdAt ASC
+        c.createdAt ASC,
+        c.id ASC
     """)
     List<Card> findAvailableForReview(
             User user,
@@ -53,20 +61,30 @@ public interface CardRepository extends JpaRepository<Card, String> {
     );
 
     @Query("""
-        SELECT c
-        FROM Card c
-        LEFT JOIN Review r ON r.card = c
-        WHERE c.collection = :collection
-          AND (
-              r IS NULL
-              OR r.stage IS NULL
-              OR r.nextReviewDate <= :today
-          )
-        ORDER BY
-            CASE WHEN r.nextReviewDate IS NULL THEN 0 ELSE 1 END,
-            r.nextReviewDate ASC,
-            c.createdAt ASC
-        """)
+    SELECT c
+    FROM Card c
+    LEFT JOIN Review r ON r.card = c
+    WHERE c.collection = :collection
+      AND (
+          r IS NULL
+          OR r.stage IS NULL
+          OR r.nextReviewDate IS NULL
+          OR r.nextReviewDate <= :today
+      )
+    ORDER BY
+        CASE
+            WHEN r IS NOT NULL
+                 AND r.stage IS NOT NULL
+                 AND (r.nextReviewDate IS NULL
+                      OR r.nextReviewDate < :today)
+            THEN 0
+            WHEN r.nextReviewDate = :today THEN 1
+            ELSE 2
+        END,
+        r.nextReviewDate ASC,
+        c.createdAt ASC,
+        c.id ASC
+    """)
     List<Card> findAvailableForReviewByCollection(
             @Param("collection") Collection collection,
             @Param("today") LocalDate today

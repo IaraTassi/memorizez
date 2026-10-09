@@ -72,4 +72,17 @@ public class ReviewController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/collections/{collectionId}/start")
+    public ResponseEntity<ReviewResponse> startReview(
+            @PathVariable String collectionId,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                reviewService.startReview(
+                        collectionId,
+                        authentication
+                )
+        );
+    }
 }

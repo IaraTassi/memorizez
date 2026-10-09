@@ -280,7 +280,7 @@ public class HistoryServiceTest {
                 user
         )).thenReturn(Optional.of(collection));
 
-        when(cardRepository.findAllByCollectionOrderByFrontAsc(
+        when(cardRepository.findAllByCollectionOrderByCreatedAtDescIdDesc(
                 collection,
                 PageRequest.of(0, 10)
         )).thenReturn(cardPage);
@@ -363,7 +363,7 @@ public class HistoryServiceTest {
                 );
 
         verify(cardRepository)
-                .findAllByCollectionOrderByFrontAsc(
+                .findAllByCollectionOrderByCreatedAtDescIdDesc(
                         collection,
                         PageRequest.of(0, 10)
                 );
@@ -456,7 +456,7 @@ public class HistoryServiceTest {
                 user
         )).thenReturn(Optional.of(collection));
 
-        when(cardRepository.findAllByCollectionOrderByFrontAsc(
+        when(cardRepository.findAllByCollectionOrderByCreatedAtDescIdDesc(
                 collection,
                 pageable
         )).thenReturn(
@@ -500,7 +500,7 @@ public class HistoryServiceTest {
                 );
 
         verify(cardRepository)
-                .findAllByCollectionOrderByFrontAsc(
+                .findAllByCollectionOrderByCreatedAtDescIdDesc(
                         collection,
                         pageable
                 );
@@ -1063,23 +1063,13 @@ public class HistoryServiceTest {
                 );
 
         assertEquals(
-                3,
+                2,
                 response.getTotalElements()
         );
 
         assertEquals(
-                3,
+                2,
                 response.getContent().size()
-        );
-
-        assertEquals(
-                HistoryAction.REMEMBERED,
-                response.getContent().get(0).action()
-        );
-
-        assertEquals(
-                history1.getCreatedAt(),
-                response.getContent().get(0).createdAt()
         );
 
         assertEquals(
@@ -1090,16 +1080,6 @@ public class HistoryServiceTest {
         assertEquals(
                 history2.getCreatedAt(),
                 response.getContent().get(1).createdAt()
-        );
-
-        assertEquals(
-                HistoryAction.CREATED,
-                response.getContent().get(2).action()
-        );
-
-        assertEquals(
-                LocalDateTime.of(2026, 9, 15, 0, 0),
-                response.getContent().get(2).createdAt()
         );
 
         verify(userRepository)
@@ -1127,7 +1107,7 @@ public class HistoryServiceTest {
     }
 
     @Test
-    void shouldReturnCreatedEventWhenCardHasNoHistory() {
+    void shouldReturnEmptyHistoryWhenCardHasNoHistory() {
 
         UserRepository userRepository = mock(UserRepository.class);
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
@@ -1206,24 +1186,11 @@ public class HistoryServiceTest {
                 );
 
         assertEquals(
-                1,
+                0,
                 response.getTotalElements()
         );
 
-        assertEquals(
-                1,
-                response.getContent().size()
-        );
-
-        assertEquals(
-                HistoryAction.CREATED,
-                response.getContent().get(0).action()
-        );
-
-        assertEquals(
-                LocalDateTime.of(2026, 9, 15, 0, 0),
-                response.getContent().get(0).createdAt()
-        );
+        assertTrue(response.getContent().isEmpty());
 
         verify(historyRepository)
                 .findByCardIdOrderByCreatedAtDesc(

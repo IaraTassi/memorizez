@@ -1504,6 +1504,9 @@ public class ReviewSubmitResultServiceTest {
 
         verify(reviewRepository)
                 .findByCard(nextCard);
+
+        verify(historyRepository)
+                .save(any(History.class));
     }
 
     @Test

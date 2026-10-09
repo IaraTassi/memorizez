@@ -132,11 +132,13 @@ public class ReviewService {
 
         if (review != null
                 && review.getStage() != null
+                && review.getNextReviewDate() != null
                 && review.getNextReviewDate().isAfter(today)) {
 
             throw new CardNotAvailableForReviewException(
                     "Card is not available for review"
             );
+
         }
 
         if (review == null) {

@@ -107,10 +107,10 @@ public class CollectionControllerTest {
         Authentication authentication = mock(Authentication.class);
 
         CollectionResponse collection1 =
-                new CollectionResponse("1", "Inglês", LocalDate.now(), 0);
+                new CollectionResponse("1", "Inglês", LocalDate.now(), 0,0);
 
         CollectionResponse collection2 =
-                new CollectionResponse("2", "Java", LocalDate.now(), 0);
+                new CollectionResponse("2", "Java", LocalDate.now(), 0,0);
 
         when(collectionService.findAll(authentication))
                 .thenReturn(List.of(collection1, collection2));

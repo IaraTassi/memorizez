@@ -81,7 +81,7 @@ public class HistoryService {
                 .orElseThrow(() -> new CollectionNotFoundException("Collection not found"));
 
         return cardRepository
-                .findAllByCollectionOrderByFrontAsc(collection, pageable)
+                .findAllByCollectionOrderByCreatedAtDescIdDesc(collection, pageable)
                 .map(card -> new HistoryCardResponse(
                         card.getId(),
                         card.getFront(),
@@ -139,46 +139,15 @@ public class HistoryService {
                 .findByIdAndCollection(cardId, collection)
                 .orElseThrow(() -> new CardNotFoundException("Card not found"));
 
-        Page<History> historyPage =
-                historyRepository
-                        .findByCardIdOrderByCreatedAtDesc(
-                                card.getId(),
-                                pageable
-                        );
-
-        List<HistoryResponse> content =
-                new ArrayList<>(
-                        historyPage
-                                .map(history -> new HistoryResponse(
-                                        history.getAction(),
-                                        history.getCreatedAt()
-                                ))
-                                .getContent()
-                );
-
-        long totalElements =
-                historyPage.getTotalElements() + 1;
-
-        int lastPage =
-                (int) Math.ceil(
-                        (double) totalElements / pageable.getPageSize()
-                ) - 1;
-
-        if (pageable.getPageNumber() == lastPage) {
-
-            content.add(
-                    new HistoryResponse(
-                            HistoryAction.CREATED,
-                            card.getCreatedAt().atStartOfDay()
-                    )
-            );
-        }
-
-        return new PageImpl<>(
-                content,
-                pageable,
-                totalElements
-        );
+        return historyRepository
+                .findByCardIdOrderByCreatedAtDesc(
+                        card.getId(),
+                        pageable
+                )
+                .map(history -> new HistoryResponse(
+                        history.getAction(),
+                        history.getCreatedAt()
+                ));
     }
 
 }

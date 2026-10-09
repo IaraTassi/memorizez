@@ -13,11 +13,8 @@ import com.memorizez.memorizez.history.History;
 import com.memorizez.memorizez.history.HistoryAction;
 import com.memorizez.memorizez.history.repository.HistoryRepository;
 import com.memorizez.memorizez.review.Review;
-import com.memorizez.memorizez.review.ReviewResult;
 import com.memorizez.memorizez.review.ReviewStage;
-import com.memorizez.memorizez.review.dto.ReviewResultRequest;
 import com.memorizez.memorizez.review.repository.ReviewRepository;
-import com.memorizez.memorizez.review.service.ReviewService;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
@@ -95,6 +92,11 @@ public class CardServiceTest {
         assertEquals(0, card.getRememberedCount());
         assertEquals(0, card.getNotRememberedCount());
         assertEquals(0, card.getEditCount());
+
+        verify(historyRepository).save(argThat(history ->
+                history.getAction() == HistoryAction.CREATED
+                        && history.getCreatedAt() != null
+        ));
     }
 
     @Test
@@ -135,6 +137,8 @@ public class CardServiceTest {
 
         verify(cardRepository, never())
                 .save(any());
+
+        verify(historyRepository, never()).save(any());
     }
 
     @Test
@@ -187,6 +191,9 @@ public class CardServiceTest {
 
         verify(cardRepository, never())
                 .save(any());
+
+        verify(historyRepository, never()).save(any());
+
     }
 
     @Test
@@ -255,7 +262,7 @@ public class CardServiceTest {
         when(collectionRepository.findByIdAndUser(collectionId, user))
                 .thenReturn(Optional.of(collection));
 
-        when(cardRepository.findAllByCollectionOrderByFrontAsc(collection, pageable))
+        when(cardRepository.findAllByCollectionOrderByCreatedAtDescIdDesc(collection, pageable))
                 .thenReturn(cards);
 
         CardService service =
@@ -277,7 +284,7 @@ public class CardServiceTest {
                 response.getContent().get(1).getFront());
 
         verify(cardRepository)
-                .findAllByCollectionOrderByFrontAsc(collection, pageable);
+                .findAllByCollectionOrderByCreatedAtDescIdDesc(collection, pageable);
 
         assertEquals(2, response.getContent().get(0).getRememberedCount());
         assertEquals(1, response.getContent().get(0).getNotRememberedCount());
@@ -328,7 +335,7 @@ public class CardServiceTest {
         when(collectionRepository.findByIdAndUser(collectionId, user))
                 .thenReturn(Optional.of(collection));
 
-        when(cardRepository.findAllByCollectionOrderByFrontAsc(collection, pageable))
+        when(cardRepository.findAllByCollectionOrderByCreatedAtDescIdDesc(collection, pageable))
                 .thenReturn(cards);
 
         CardService service =
@@ -349,7 +356,7 @@ public class CardServiceTest {
         assertEquals(20, response.getSize());
 
         verify(cardRepository)
-                .findAllByCollectionOrderByFrontAsc(collection, pageable);
+                .findAllByCollectionOrderByCreatedAtDescIdDesc(collection, pageable);
     }
 
     @Test
@@ -384,7 +391,7 @@ public class CardServiceTest {
 
         verify(collectionRepository, never()).findByIdAndUser(anyString(), any());
 
-        verify(cardRepository, never()).findAllByCollectionOrderByFrontAsc(any(), any());
+        verify(cardRepository, never()).findAllByCollectionOrderByCreatedAtDescIdDesc(any(), any());
 
     }
 
@@ -430,7 +437,7 @@ public class CardServiceTest {
         );
 
         verify(cardRepository, never())
-                .findAllByCollectionOrderByFrontAsc(any(), any());
+                .findAllByCollectionOrderByCreatedAtDescIdDesc(any(), any());
     }
 
     @Test

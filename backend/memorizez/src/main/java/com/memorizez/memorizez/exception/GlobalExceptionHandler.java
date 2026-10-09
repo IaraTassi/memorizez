@@ -9,6 +9,7 @@ import com.memorizez.memorizez.user.exception.PasswordMismatchException;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -26,6 +27,17 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handlePasswordMismatch() {
 
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public void handleValidationFailure() {
+    }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public void handleUnexpectedException(Exception exception) {
+        exception.printStackTrace();
     }
 
     @ExceptionHandler(AuthenticationException.class)
