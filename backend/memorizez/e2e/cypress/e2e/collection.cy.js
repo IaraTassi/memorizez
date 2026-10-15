@@ -754,7 +754,7 @@ describe('Collection and card', () => {
 
     });
 
-    describe.only('Card', () => {
+    describe('Card', () => {
 
         let collectionId;
         let user;

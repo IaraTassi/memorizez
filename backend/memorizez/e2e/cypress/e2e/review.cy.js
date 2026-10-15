@@ -156,43 +156,41 @@ describe('Review', () => {
                 back: 'A Java framework.',
                 notes: 'Second card for review E2E test'
             }
-        }).then((response) => {
-            expect(response.status).to.equal(201);
+        }).then((createResponse) => {
+            expect(createResponse.status).to.equal(201);
 
             cy.request({
-                method: 'GET',
-                url: `/collections/${collectionId}/cards`
-            }).then((response) => {
-                expect(response.status).to.equal(200);
+                method: 'POST',
+                url: `/reviews/collections/${collectionId}/start`
+            }).then((startResponse) => {
+                expect(startResponse.status).to.equal(200);
 
-                const secondCard = response.body.content.find(
-                    (card) => card.id !== cardId
-                );
+                const currentCardId = startResponse.body.cardId;
 
-                expect(secondCard).to.exist;
+                expect(currentCardId).to.exist;
 
                 cy.request({
-                    method: 'POST',
-                    url: `/reviews/collections/${collectionId}/start`
-                }).then((response) => {
-                    expect(response.status).to.equal(200);
+                    method: 'GET',
+                    url: `/collections/${collectionId}/cards?page=0&size=20`
+                }).then((cardsResponse) => {
+                    expect(cardsResponse.status).to.equal(200);
 
-                    const currentCardId = response.body.cardId;
+                    const nonCurrentCard = cardsResponse.body.content.find(
+                        (card) => card.id !== currentCardId
+                    );
 
-                    expect(currentCardId).to.exist;
-                    expect(secondCard.id).not.to.equal(currentCardId);
+                    expect(nonCurrentCard).to.exist;
 
                     cy.request({
                         method: 'GET',
-                        url: `/reviews/collections/${collectionId}/cards/${secondCard.id}/review`,
+                        url: `/reviews/collections/${collectionId}/cards/${nonCurrentCard.id}/review`,
                         failOnStatusCode: false
-                    }).then((response) => {
-                        expect(response.status).to.equal(400);
+                    }).then((reviewResponse) => {
+                        expect(reviewResponse.status).to.equal(400);
                     });
                 });
             });
         });
-
     });
 
     it('should complete the review when the user remembers the card', () => {
