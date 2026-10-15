@@ -22,9 +22,6 @@ public class Review {
 
     private LocalDateTime revealedAt;
 
-    @Version
-    private Long version;
-
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "card_id",
@@ -66,10 +63,6 @@ public class Review {
 
     public void setRevealedAt(LocalDateTime revealedAt) {
         this.revealedAt = revealedAt;
-    }
-
-    public Long getVersion() {
-        return version;
     }
 
     public Card getCard() {
