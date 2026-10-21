@@ -3,6 +3,10 @@ package com.memorizez.memorizez.user.controller;
 import com.memorizez.memorizez.user.dto.LoginRequest;
 import com.memorizez.memorizez.user.dto.RegisterUserRequest;
 import com.memorizez.memorizez.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/users")
+@Tag(name = "Users", description = "Endpoints para gerenciamento de usuários, incluindo criação de contas, autenticação e exclusão de contas existentes.")
 public class UserController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
@@ -31,6 +36,12 @@ public class UserController {
     }
 
     @PostMapping
+    @Operation(summary = "Cadastrar usuário", description = "Cria uma nova conta de usuário.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Usuário cadastrado com sucesso."),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos ou confirmação de senha diferente."),
+            @ApiResponse(responseCode = "409", description = "Já existe um usuário cadastrado com esse e-mail.")
+    })
     public ResponseEntity<Void> register(
             @Valid @RequestBody RegisterUserRequest request
     ) {
@@ -40,6 +51,12 @@ public class UserController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Realizar login", description = "Autentica um usuário e inicia sua sessão.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login realizado com sucesso."),
+            @ApiResponse(responseCode = "400", description = "Dados de login inválidos."),
+            @ApiResponse(responseCode = "401", description = "E-mail ou senha incorretos.")
+    })
     public ResponseEntity<Void> login(
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest,
@@ -67,6 +84,11 @@ public class UserController {
     }
 
     @DeleteMapping
+    @Operation(summary = "Excluir conta do usuário", description = "Exclui a conta do usuário autenticado e encerra sua sessão.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Conta excluída com sucesso."),
+            @ApiResponse(responseCode = "401", description = "Usuário não autenticado.")
+    })
     public ResponseEntity<Void> delete(
             Authentication authentication,
             HttpServletRequest httpRequest,
