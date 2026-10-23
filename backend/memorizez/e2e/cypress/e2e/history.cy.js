@@ -3,36 +3,55 @@ describe('History', () => {
     let collectionId;
     let cardId;
 
+    const requestWithCsrf = (options) => {
+        return cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
+        });
+    };
+
     const createAndLoginUser = () => {
         const email =
             `e2e-history-${Date.now()}-${Math.random()}@memorizez.com`;
 
-        return cy.request('POST', '/users', {
-            name: 'History E2E User',
-            email,
-            password: 'password123',
-            confirmPassword: 'password123'
+        return requestWithCsrf({
+            method: 'POST',
+            url: '/users',
+            body: {
+                name: 'History E2E User',
+                email,
+                password: 'password123',
+                confirmPassword: 'password123'
+            }
         }).then((userResponse) => {
             expect(userResponse.status).to.equal(201);
 
-            return cy.request('POST', '/users/login', {
-                email,
-                password: 'password123'
+            return requestWithCsrf({
+                method: 'POST',
+                url: '/users/login',
+                body: {
+                    email,
+                    password: 'password123'
+                }
             });
         }).then((loginResponse) => {
             expect(loginResponse.status).to.equal(200);
 
-            return cy.request({
-                method: 'GET',
-                url: '/collections'
-            });
+            return cy.request('GET', '/collections');
         }).then((collectionsResponse) => {
             expect(collectionsResponse.status).to.equal(200);
         });
     };
 
     const startAndAnswerReview = (result) => {
-        return cy.request({
+        return requestWithCsrf({
             method: 'POST',
             url: `/reviews/collections/${collectionId}/start`
         }).then((startResponse) => {
@@ -45,10 +64,10 @@ describe('History', () => {
         }).then((revealResponse) => {
             expect(revealResponse.status).to.equal(200);
 
-            return cy.request({
+            return requestWithCsrf({
                 method: 'POST',
                 url: `/reviews/collections/${collectionId}/cards/${cardId}/result`,
-                body: { result }
+                body: {result}
             });
         });
     };
@@ -59,8 +78,10 @@ describe('History', () => {
 
         createAndLoginUser()
             .then(() => {
-                return cy.request('POST', '/collections', {
-                    name: 'Java'
+                return requestWithCsrf({
+                    method: 'POST',
+                    url: '/collections',
+                    body: {name: 'Java'}
                 });
             })
             .then((collectionResponse) => {
@@ -84,15 +105,15 @@ describe('History', () => {
                 expect(collection.id).to.exist;
                 collectionId = collection.id;
 
-                return cy.request(
-                    'POST',
-                    `/collections/${collectionId}/cards`,
-                    {
+                return requestWithCsrf({
+                    method: 'POST',
+                    url: `/collections/${collectionId}/cards`,
+                    body: {
                         front: 'What is Java?',
                         back: 'A programming language.',
                         notes: 'History E2E test'
                     }
-                );
+                });
             })
             .then((cardResponse) => {
                 expect(cardResponse.status).to.equal(201);
@@ -197,52 +218,72 @@ describe('History', () => {
     });
 
     it('should support pagination', () => {
-        cy.request({
-            method: 'POST',
-            url: `/collections/${collectionId}/cards`,
-            body: {
-                front: 'What is Spring?',
-                back: 'A Java framework.',
-                notes: 'Pagination E2E test'
-            }
-        }).then((createResponse) => {
-            expect(createResponse.status).to.equal(201);
+        const front = `Question ${Date.now()}`;
+        const back = 'Answer for pagination test';
 
-            return cy.request({
-                method: 'GET',
-                url: `/collections/${collectionId}/cards?page=0&size=1`
+        return cy.request('GET', '/csrf')
+            .then((csrfResponse) => {
+                return cy.request({
+                    method: 'POST',
+                    url: `/collections/${collectionId}/cards`,
+                    headers: {
+                        'X-CSRF-TOKEN': csrfResponse.body.token
+                    },
+                    body: {
+                        front: front,
+                        back: back,
+                        notes: 'Pagination test'
+                    }
+                });
+            })
+            .then((cardResponse) => {
+                expect(cardResponse.status).to.equal(201);
+
+                return cy.request({
+                    method: 'GET',
+                    url: `/collections/${collectionId}/cards?page=0&size=1`
+                });
+            })
+            .then((response) => {
+                expect(response.status).to.equal(200);
+                expect(response.body.content).to.have.length(1);
+                expect(response.body.size).to.equal(1);
+                expect(response.body.number).to.equal(0);
+                expect(response.body.totalElements).to.equal(2);
             });
-        }).then((response) => {
-            expect(response.status).to.equal(200);
-            expect(response.body.content).to.have.length(1);
-            expect(response.body.size).to.equal(1);
-            expect(response.body.number).to.equal(0);
-            expect(response.body.totalElements).to.equal(2);
-        });
     });
 
     it('should return an empty page for a collection without cards', () => {
-        cy.request('POST', '/collections', {
-            name: 'Empty collection'
-        }).then((createResponse) => {
-            expect(createResponse.status).to.equal(201);
+        const emptyCollectionName = `Empty collection ${Date.now()}`;
 
-            return cy.request('GET', '/collections');
-        }).then((collectionsResponse) => {
-            const collection = collectionsResponse.body.find(
-                (item) => item.name === 'Empty collection'
-            );
+        return cy.request('GET', '/csrf')
+            .then((csrfResponse) => cy.request({
+                method: 'POST',
+                url: '/collections',
+                headers: {'X-CSRF-TOKEN': csrfResponse.body.token},
+                body: {name: emptyCollectionName}
+            }))
+            .then((createResponse) => {
+                expect(createResponse.status).to.equal(201);
 
-            expect(collection).to.exist;
+                return cy.request('GET', '/collections');
+            })
+            .then((collectionsResponse) => {
+                const collection = collectionsResponse.body.find(
+                    (item) => item.name === emptyCollectionName
+                );
 
-            return cy.request({
-                method: 'GET',
-                url: `/history/collections/${collection.id}/cards?page=0&size=10`
+                expect(collection).to.exist;
+
+                return cy.request({
+                    method: 'GET',
+                    url: `/history/collections/${collection.id}/cards?page=0&size=10`
+                });
+            })
+            .then((response) => {
+                expect(response.status).to.equal(200);
+                expect(response.body.content).to.be.an('array').that.is.empty;
             });
-        }).then((response) => {
-            expect(response.status).to.equal(200);
-            expect(response.body.content).to.be.an('array').that.is.empty;
-        });
     });
 
     it('should return not found for a nonexistent collection', () => {
@@ -297,35 +338,6 @@ describe('History', () => {
             method: 'GET',
             url: `/history/collections/${collectionId}/cards/999999999`,
             failOnStatusCode: false
-        }).then((response) => {
-            expect(response.status).to.equal(404);
-        });
-    });
-
-    it('should return not found when the card belongs to another collection', () => {
-        cy.request('POST', '/collections', {
-            name: 'Another collection'
-        }).then((createResponse) => {
-            expect(createResponse.status).to.equal(201);
-
-            return cy.request('GET', '/collections');
-        }).then((collectionsResponse) => {
-            expect(collectionsResponse.status).to.equal(200);
-            expect(collectionsResponse.body).to.be.an('array');
-
-            const collection = collectionsResponse.body.find(
-                (item) => item.name === 'Another collection'
-            );
-
-            expect(collection, 'A segunda coleção deve existir').to.exist;
-            expect(collection.id).to.exist;
-            expect(collection.id).to.not.equal(collectionId);
-
-            return cy.request({
-                method: 'GET',
-                url: `/history/collections/${collection.id}/cards/${cardId}`,
-                failOnStatusCode: false
-            });
         }).then((response) => {
             expect(response.status).to.equal(404);
         });
@@ -516,32 +528,41 @@ describe('History', () => {
     });
 
     it('should return not found when the card belongs to another collection', () => {
-        cy.request('POST', '/collections', {
-            name: 'Another collection'
-        }).then((createResponse) => {
-            expect(createResponse.status).to.equal(201);
+        const otherCollectionName = `Another collection ${Date.now()}`;
 
-            return cy.request('GET', '/collections');
-        }).then((collectionsResponse) => {
-            expect(collectionsResponse.status).to.equal(200);
-            expect(collectionsResponse.body).to.be.an('array');
+        return cy.request('GET', '/csrf')
+            .then((csrfResponse) => cy.request({
+                method: 'POST',
+                url: '/collections',
+                headers: {'X-CSRF-TOKEN': csrfResponse.body.token},
+                body: {name: otherCollectionName}
+            }))
+            .then((createResponse) => {
+                expect(createResponse.status).to.equal(201);
 
-            const collection = collectionsResponse.body.find(
-                (item) => item.name === 'Another collection'
-            );
+                return cy.request('GET', '/collections');
+            })
+            .then((collectionsResponse) => {
+                expect(collectionsResponse.status).to.equal(200);
+                expect(collectionsResponse.body).to.be.an('array');
 
-            expect(collection, 'A segunda coleção deve existir').to.exist;
-            expect(collection.id).to.exist;
-            expect(collection.id).to.not.equal(collectionId);
+                const collection = collectionsResponse.body.find(
+                    (item) => item.name === otherCollectionName
+                );
 
-            return cy.request({
-                method: 'GET',
-                url: `/history/collections/${collection.id}/cards/${cardId}`,
-                failOnStatusCode: false
+                expect(collection, 'A segunda coleção deve existir').to.exist;
+                expect(collection.id).to.exist;
+                expect(collection.id).to.not.equal(collectionId);
+
+                return cy.request({
+                    method: 'GET',
+                    url: `/history/collections/${collection.id}/cards/${cardId}`,
+                    failOnStatusCode: false
+                });
+            })
+            .then((response) => {
+                expect(response.status).to.equal(404);
             });
-        }).then((response) => {
-            expect(response.status).to.equal(404);
-        });
     });
 
     it('should not expose another user card details', () => {
@@ -658,7 +679,7 @@ describe('History', () => {
             expect(response.body.size).to.equal(1);
             expect(response.body.number).to.equal(0);
             expect(response.body.totalElements).to.be.at.least(1);
-            });
+        });
     });
 
     it('should return not found for a nonexistent card history', () => {

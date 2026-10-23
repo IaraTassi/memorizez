@@ -5,7 +5,6 @@ describe('Review', () => {
     let cardId;
 
     beforeEach(() => {
-
         user = {
             name: 'Review E2E User',
             email: `e2e-review-${Date.now()}-${Math.random()}@memorizez.com`,
@@ -13,64 +12,84 @@ describe('Review', () => {
             confirmPassword: 'password123'
         };
 
-        cy.request({
-            method: 'POST',
-            url: '/users',
-            body: user
-        }).then((response) => {
-
-            expect(response.status).to.equal(201);
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
 
             cy.request({
                 method: 'POST',
-                url: '/users/login',
-                body: {
-                    email: user.email,
-                    password: user.password
-                }
-            }).then((response) => {
+                url: '/users',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: user
+            }).then((registerResponse) => {
 
-                expect(response.status).to.equal(200);
+                expect(registerResponse.status).to.equal(201);
 
                 cy.request({
                     method: 'POST',
-                    url: '/collections',
+                    url: '/users/login',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken
+                    },
                     body: {
-                        name: 'Java'
+                        email: user.email,
+                        password: user.password
                     }
-                }).then((response) => {
+                }).then((loginResponse) => {
 
-                    expect(response.status).to.equal(201);
+                    expect(loginResponse.status).to.equal(200);
 
-                    cy.request({
-                        method: 'GET',
-                        url: '/collections'
-                    }).then((response) => {
-
-                        expect(response.status).to.equal(200);
-
-                        collectionId = response.body[0].id;
+                    cy.request('GET', '/csrf').then((newCsrfResponse) => {
+                        const newCsrfToken = newCsrfResponse.body.token;
 
                         cy.request({
                             method: 'POST',
-                            url: `/collections/${collectionId}/cards`,
+                            url: '/collections',
+                            headers: {
+                                'X-CSRF-TOKEN': newCsrfToken
+                            },
                             body: {
-                                front: 'What is Java?',
-                                back: 'A programming language.',
-                                notes: 'Review E2E test'
+                                name: 'Java'
                             }
-                        }).then((response) => {
+                        }).then((collectionResponse) => {
 
-                            expect(response.status).to.equal(201);
+                            expect(collectionResponse.status).to.equal(201);
 
                             cy.request({
                                 method: 'GET',
-                                url: `/collections/${collectionId}/cards`
-                            }).then((response) => {
+                                url: '/collections'
+                            }).then((collectionsResponse) => {
+                                expect(collectionsResponse.status).to.equal(200);
 
-                                expect(response.status).to.equal(200);
+                                collectionId = collectionsResponse.body[0].id;
 
-                                cardId = response.body.content[0].id;
+                                cy.request({
+                                    method: 'POST',
+                                    url: `/collections/${collectionId}/cards`,
+                                    headers: {
+                                        'X-CSRF-TOKEN': newCsrfToken
+                                    },
+                                    body: {
+                                        front: 'What is Java?',
+                                        back: 'A programming language.',
+                                        notes: 'Review E2E test'
+                                    }
+                                }).then((cardResponse) => {
+
+                                    expect(cardResponse.status).to.equal(201);
+
+                                    cy.request({
+                                        method: 'GET',
+                                        url: `/collections/${collectionId}/cards`
+                                    }).then((cardsResponse) => {
+
+                                        expect(cardsResponse.status).to.equal(200);
+
+                                        cardId = cardsResponse.body.content[0].id;
+                                    });
+
+                                });
 
                             });
 
@@ -115,9 +134,16 @@ describe('Review', () => {
     });
 
     it('should reveal a card successfully', () => {
-        cy.request({
-            method: 'POST',
-            url: `/reviews/collections/${collectionId}/start`
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: `/reviews/collections/${collectionId}/start`,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
         }).then((response) => {
             expect(response.status).to.equal(200);
 
@@ -144,327 +170,426 @@ describe('Review', () => {
             failOnStatusCode: false
         }).then((response) => {
             expect(response.status).to.equal(400);
-        })
+        });
     });
 
     it('should not reveal a card that is not the current card in the review session', () => {
-        cy.request({
-            method: 'POST',
-            url: `/collections/${collectionId}/cards`,
-            body: {
-                front: 'What is Spring?',
-                back: 'A Java framework.',
-                notes: 'Second card for review E2E test'
-            }
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: `/collections/${collectionId}/cards`,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: {
+                    front: 'What is Spring?',
+                    back: 'A Java framework.',
+                    notes: 'Second card for review E2E test'
+                }
+            });
         }).then((createResponse) => {
             expect(createResponse.status).to.equal(201);
 
-            cy.request({
+            return cy.request('GET', '/csrf');
+        }).then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
                 method: 'POST',
-                url: `/reviews/collections/${collectionId}/start`
-            }).then((startResponse) => {
-                expect(startResponse.status).to.equal(200);
+                url: `/reviews/collections/${collectionId}/start`,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
+        }).then((startResponse) => {
+            expect(startResponse.status).to.equal(200);
 
-                const currentCardId = startResponse.body.cardId;
+            const currentCardId = startResponse.body.cardId;
 
-                expect(currentCardId).to.exist;
+            expect(currentCardId).to.exist;
 
-                cy.request({
+            return cy.request({
+                method: 'GET',
+                url: `/collections/${collectionId}/cards?page=0&size=20`
+            }).then((cardsResponse) => {
+                expect(cardsResponse.status).to.equal(200);
+
+                const nonCurrentCard = cardsResponse.body.content.find(
+                    (card) => card.id !== currentCardId
+                );
+
+                expect(nonCurrentCard).to.exist;
+
+                return cy.request({
                     method: 'GET',
-                    url: `/collections/${collectionId}/cards?page=0&size=20`
-                }).then((cardsResponse) => {
-                    expect(cardsResponse.status).to.equal(200);
-
-                    const nonCurrentCard = cardsResponse.body.content.find(
-                        (card) => card.id !== currentCardId
-                    );
-
-                    expect(nonCurrentCard).to.exist;
-
-                    cy.request({
-                        method: 'GET',
-                        url: `/reviews/collections/${collectionId}/cards/${nonCurrentCard.id}/review`,
-                        failOnStatusCode: false
-                    }).then((reviewResponse) => {
-                        expect(reviewResponse.status).to.equal(400);
-                    });
+                    url: `/reviews/collections/${collectionId}/cards/${nonCurrentCard.id}/review`,
+                    failOnStatusCode: false
                 });
             });
+        }).then((reviewResponse) => {
+            expect(reviewResponse.status).to.equal(400);
         });
     });
 
     it('should complete the review when the user remembers the card', () => {
-        cy.request({
-            method: 'POST', url: `/reviews/collections/${collectionId}/start`
-        }).then((response) => {
-            expect(response.status).to.equal(200);
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
 
-            cy.request({
+            return cy.request({
+                method: 'POST',
+                url: `/reviews/collections/${collectionId}/start`,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
+        }).then((startResponse) => {
+            expect(startResponse.status).to.equal(200);
+
+            return cy.request({
                 method: 'GET',
                 url: `/reviews/collections/${collectionId}/cards/${cardId}/review`
-            }).then((response) => {
-                expect(response.status).to.equal(200);
-
-                cy.request({
-                    method: 'POST',
-                    url: `/reviews/collections/${collectionId}/cards/${cardId}/result`,
-                    body: {
-                        result: 'REMEMBERED'
-                    }
-                }).then((response) => {
-                    expect(response.status).to.equal(200);
-                    expect(response.body.completed).to.be.true;
-                    expect(response.body.nextCard).to.be.null;
-                    expect(response.body.progress.completedCards).to.equal(1);
-                    expect(response.body.progress.totalCards).to.equal(1);
-                    expect(response.body.progress.percentage).to.equal(100);
-                });
             });
+        }).then((reviewResponse) => {
+            expect(reviewResponse.status).to.equal(200);
+
+            return cy.request('GET', '/csrf');
+        }).then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: `/reviews/collections/${collectionId}/cards/${cardId}/result`,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: {
+                    result: 'REMEMBERED'
+                }
+            });
+        }).then((resultResponse) => {
+            expect(resultResponse.status).to.equal(200);
+            expect(resultResponse.body.completed).to.be.true;
+            expect(resultResponse.body.nextCard).to.be.null;
+            expect(resultResponse.body.progress.completedCards).to.equal(1);
+            expect(resultResponse.body.progress.totalCards).to.equal(1);
+            expect(resultResponse.body.progress.percentage).to.equal(100);
         });
     });
 
     it('should reset the review stage when the user does not remember the card', () => {
-        cy.request({
-            method: 'POST',
-            url: `/reviews/collections/${collectionId}/start`
-        }).then((response) => {
-            expect(response.status).to.equal(200);
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
 
-            cy.request({
+            return cy.request({
+                method: 'POST',
+                url: `/reviews/collections/${collectionId}/start`,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
+        }).then((startResponse) => {
+            expect(startResponse.status).to.equal(200);
+
+            return cy.request({
                 method: 'GET',
                 url: `/reviews/collections/${collectionId}/cards/${cardId}/review`
-            }).then((response) => {
-                expect(response.status).to.equal(200);
-
-                cy.request({
-                    method: 'POST',
-                    url: `/reviews/collections/${collectionId}/cards/${cardId}/result`,
-                    body: {
-                        result: 'NOT_REMEMBERED'
-                    }
-                }).then((response) => {
-                    expect(response.status).to.equal(200);
-                    expect(response.body.completed).to.be.true;
-                    expect(response.body.nextCard).to.be.null;
-
-                    expect(response.body.progress.completedCards).to.equal(1);
-                    expect(response.body.progress.totalCards).to.equal(1);
-                    expect(response.body.progress.percentage).to.equal(100);
-                });
             });
+        }).then((reviewResponse) => {
+            expect(reviewResponse.status).to.equal(200);
+
+            return cy.request('GET', '/csrf');
+        }).then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: `/reviews/collections/${collectionId}/cards/${cardId}/result`,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: {
+                    result: 'NOT_REMEMBERED'
+                }
+            });
+        }).then((resultResponse) => {
+            expect(resultResponse.status).to.equal(200);
+            expect(resultResponse.body.completed).to.be.true;
+            expect(resultResponse.body.nextCard).to.be.null;
+
+            expect(resultResponse.body.progress.completedCards).to.equal(1);
+            expect(resultResponse.body.progress.totalCards).to.equal(1);
+            expect(resultResponse.body.progress.percentage).to.equal(100);
         });
     });
 
     it('should not reveal a card from a different collection than the active review session', () => {
 
-        cy.request({
-            method: 'POST',
-            url: '/collections',
-            body: {
-                name: 'Other Collection'
-            }
-        }).then((createResponse) => {
+        const otherCollectionName = `Other Collection ${Date.now()}`;
 
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: '/collections',
+                headers: {'X-CSRF-TOKEN': csrfToken},
+                body: {
+                    name: otherCollectionName
+                }
+            });
+        }).then((createResponse) => {
             expect(createResponse.status).to.equal(201);
 
-            cy.request({
+            return cy.request({
                 method: 'GET',
                 url: '/collections'
-            }).then((response) => {
+            });
+        }).then((response) => {
+            expect(response.status).to.equal(200);
 
-                expect(response.status).to.equal(200);
+            const otherCollection = response.body.find(
+                (collection) => collection.name === otherCollectionName
+            );
 
-                const otherCollection = response.body.find(
-                    (collection) => collection.name === 'Other Collection'
-                );
+            expect(otherCollection).to.exist;
 
-                expect(otherCollection).to.exist;
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
 
-                // Cria um card na outra coleção
-                cy.request({
+                return cy.request({
                     method: 'POST',
                     url: `/collections/${otherCollection.id}/cards`,
+                    headers: {'X-CSRF-TOKEN': csrfToken},
                     body: {
                         front: 'What is Python?',
                         back: 'A programming language.',
                         notes: 'Card from another collection'
                     }
                 }).then((cardResponse) => {
-
                     expect(cardResponse.status).to.equal(201);
 
-                    cy.request({
+                    return cy.request({
                         method: 'GET',
                         url: `/collections/${otherCollection.id}/cards`
-                    }).then((cardsResponse) => {
-
-                        expect(cardsResponse.status).to.equal(200);
-
-                        const otherCard = cardsResponse.body.content.find(
-                            (card) => card.front === 'What is Python?'
-                        );
-
-                        expect(otherCard).to.exist;
-
-                        cy.request({
-                            method: 'POST',
-                            url: `/reviews/collections/${collectionId}/start`
-                        }).then((startResponse) => {
-
-                            expect(startResponse.status).to.equal(200);
-
-                            cy.request({
-                                method: 'GET',
-                                url: `/reviews/collections/${otherCollection.id}/cards/${otherCard.id}/review`,
-                                failOnStatusCode: false
-                            }).then((reviewResponse) => {
-
-                                expect(
-                                    reviewResponse.status,
-                                    `Resposta da API: ${JSON.stringify(reviewResponse.body)}`
-                                ).to.equal(400);
-
-                            });
-
-                        });
-
                     });
+                }).then((cardsResponse) => {
+                    expect(cardsResponse.status).to.equal(200);
 
+                    const otherCard = cardsResponse.body.content.find(
+                        (card) => card.front === 'What is Python?'
+                    );
+
+                    expect(otherCard).to.exist;
+
+                    return cy.request('GET', '/csrf').then((csrfResponse) => {
+                        const csrfToken = csrfResponse.body.token;
+
+                        return cy.request({
+                            method: 'POST',
+                            url: `/reviews/collections/${collectionId}/start`,
+                            headers: {'X-CSRF-TOKEN': csrfToken}
+                        });
+                    }).then((startResponse) => {
+                        expect(startResponse.status).to.equal(200);
+
+                        return cy.request({
+                            method: 'GET',
+                            url: `/reviews/collections/${otherCollection.id}/cards/${otherCard.id}/review`,
+                            failOnStatusCode: false
+                        });
+                    }).then((reviewResponse) => {
+                        expect(
+                            reviewResponse.status,
+                            `Resposta da API: ${JSON.stringify(reviewResponse.body)}`
+                        ).to.equal(400);
+                    });
                 });
-
             });
-
         });
-
     });
 
     it('should not submit a result before revealing the card', () => {
-        cy.request({
-            method: 'POST',
-            url: `/reviews/collections/${collectionId}/start`
-        }).then((response) => {
-            expect(response.status).to.equal(200);
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
 
-            cy.request({
+            return cy.request({
                 method: 'POST',
-                url: `/reviews/collections/${collectionId}/cards/${cardId}/result`,
-                body: {
-                    result: "REMEMBERED"
-                },
-                failOnStatusCode: false
-            }).then((response) => {
-                expect(response.status).to.equal(400);
-            })
-        })
+                url: `/reviews/collections/${collectionId}/start`,
+                headers: {'X-CSRF-TOKEN': csrfToken}
+            });
+        }).then((startResponse) => {
+            expect(startResponse.status).to.equal(200);
+
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
+
+                return cy.request({
+                    method: 'POST',
+                    url: `/reviews/collections/${collectionId}/cards/${cardId}/result`,
+                    headers: {'X-CSRF-TOKEN': csrfToken},
+                    body: {
+                        result: 'REMEMBERED'
+                    },
+                    failOnStatusCode: false
+                });
+            });
+        }).then((resultResponse) => {
+            expect(resultResponse.status).to.equal(400);
+        });
     });
 
     it('should not submit a result when the result field is missing', () => {
-        cy.request({
-            method: 'POST',
-            url: `/reviews/collections/${collectionId}/start`
-        }).then((response) => {
-            expect(response.status).to.equal(200);
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
 
-            cy.request({
+            return cy.request({
+                method: 'POST',
+                url: `/reviews/collections/${collectionId}/start`,
+                headers: {'X-CSRF-TOKEN': csrfToken}
+            });
+        }).then((startResponse) => {
+            expect(startResponse.status).to.equal(200);
+
+            return cy.request({
                 method: 'GET',
                 url: `/reviews/collections/${collectionId}/cards/${cardId}/review`
-            }).then((response) => {
-                expect(response.status).to.equal(200);
+            });
+        }).then((reviewResponse) => {
+            expect(reviewResponse.status).to.equal(200);
 
-                cy.request({
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
+
+                return cy.request({
                     method: 'POST',
                     url: `/reviews/collections/${collectionId}/cards/${cardId}/result`,
+                    headers: {'X-CSRF-TOKEN': csrfToken},
                     body: {},
                     failOnStatusCode: false
-                }).then((response) => {
-                    expect(response.status).to.equal(400);
                 });
             });
+        }).then((resultResponse) => {
+            expect(resultResponse.status).to.equal(400);
         });
     });
 
     it('should not submit a result for a card that is not in the active review session', () => {
-        cy.request({
-            method: 'POST',
-            url: `/reviews/collections/${collectionId}/start`
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: `/reviews/collections/${collectionId}/start`,
+                headers: {'X-CSRF-TOKEN': csrfToken}
+            });
         }).then((startResponse) => {
             expect(startResponse.status).to.equal(200);
 
             const currentCardId = startResponse.body.cardId;
 
-            cy.request({
-                method: 'POST',
-                url: `/collections/${collectionId}/cards`,
-                body: {
-                    front: 'What is Spring?',
-                    back: 'A Java framework.',
-                    notes: 'Card created after review session started'
-                }
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
+
+                return cy.request({
+                    method: 'POST',
+                    url: `/collections/${collectionId}/cards`,
+                    headers: {'X-CSRF-TOKEN': csrfToken},
+                    body: {
+                        front: 'What is Spring?',
+                        back: 'A Java framework.',
+                        notes: 'Card created after review session started'
+                    }
+                });
             }).then((createResponse) => {
                 expect(createResponse.status).to.equal(201);
 
-                cy.request({
+                return cy.request({
                     method: 'GET',
                     url: `/collections/${collectionId}/cards`
-                }).then((cardsResponse) => {
-                    expect(cardsResponse.status).to.equal(200);
+                });
+            }).then((cardsResponse) => {
+                expect(cardsResponse.status).to.equal(200);
 
-                    const newCard = cardsResponse.body.content.find(
-                        (card) => card.front === 'What is Spring?'
-                    );
+                const newCard = cardsResponse.body.content.find(
+                    (card) => card.front === 'What is Spring?'
+                );
 
-                    expect(newCard).to.exist;
-                    expect(newCard.id).not.to.equal(currentCardId);
+                expect(newCard).to.exist;
+                expect(newCard.id).not.to.equal(currentCardId);
 
-                    cy.request({
+                return cy.request('GET', '/csrf').then((csrfResponse) => {
+                    const csrfToken = csrfResponse.body.token;
+
+                    return cy.request({
                         method: 'POST',
                         url: `/reviews/collections/${collectionId}/cards/${newCard.id}/result`,
+                        headers: {'X-CSRF-TOKEN': csrfToken},
                         body: {
                             result: 'REMEMBERED'
                         },
                         failOnStatusCode: false
-                    }).then((resultResponse) => {
-                        expect(resultResponse.status).to.equal(400);
                     });
                 });
+            }).then((resultResponse) => {
+                expect(resultResponse.status).to.equal(400);
             });
         });
-
     });
 
     it('should not submit a result after the review session has been completed', () => {
-        cy.request(
-            'POST',
-            `/reviews/collections/${collectionId}/start`
-        ).then((startResponse) => {
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: `/reviews/collections/${collectionId}/start`,
+                headers: {'X-CSRF-TOKEN': csrfToken}
+            });
+        }).then((startResponse) => {
             expect(startResponse.status).to.equal(200);
 
             const currentCardId = startResponse.body.cardId;
 
-            cy.request(
-                'GET',
-                `/reviews/collections/${collectionId}/cards/${currentCardId}/review`
-            ).then((revealResponse) => {
+            return cy.request({
+                method: 'GET',
+                url: `/reviews/collections/${collectionId}/cards/${currentCardId}/review`
+            }).then((revealResponse) => {
                 expect(revealResponse.status).to.equal(200);
 
-                cy.request(
-                    'POST',
-                    `/reviews/collections/${collectionId}/cards/${currentCardId}/result`,
-                    { result: 'REMEMBERED' }
-                ).then((resultResponse) => {
+                return cy.wrap(currentCardId);
+            });
+        }).then((currentCardId) => {
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
+
+                return cy.request({
+                    method: 'POST',
+                    url: `/reviews/collections/${collectionId}/cards/${currentCardId}/result`,
+                    headers: {'X-CSRF-TOKEN': csrfToken},
+                    body: {result: 'REMEMBERED'}
+                }).then((resultResponse) => {
                     expect(resultResponse.status).to.equal(200);
                     expect(resultResponse.body.completed).to.equal(true);
 
-                    cy.request({
-                        method: 'POST',
-                        url: `/reviews/collections/${collectionId}/cards/${currentCardId}/result`,
-                        body: { result: 'REMEMBERED' },
-                        failOnStatusCode: false
-                    }).then((secondResultResponse) => {
-                        expect(secondResultResponse.status).to.equal(400);
-                    });
+                    return cy.wrap(currentCardId);
                 });
             });
+        }).then((currentCardId) => {
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
+
+                return cy.request({
+                    method: 'POST',
+                    url: `/reviews/collections/${collectionId}/cards/${currentCardId}/result`,
+                    headers: {'X-CSRF-TOKEN': csrfToken},
+                    body: {result: 'REMEMBERED'},
+                    failOnStatusCode: false
+                });
+            });
+        }).then((secondResultResponse) => {
+            expect(secondResultResponse.status).to.equal(400);
         });
     });
 
@@ -476,31 +601,59 @@ describe('Review', () => {
             confirmPassword: 'Password123!'
         };
 
-        cy.request('POST', '/users', anotherUser).then((createUserResponse) => {
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: '/users',
+                headers: {'X-CSRF-TOKEN': csrfToken},
+                body: anotherUser
+            });
+        }).then((createUserResponse) => {
             expect(createUserResponse.status).to.equal(201);
 
-            cy.request('POST', '/users/login', {
-                email: anotherUser.email,
-                password: anotherUser.password
-            }).then((loginResponse) => {
-                expect(loginResponse.status).to.equal(200);
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
 
-                cy.request({
+                return cy.request({
                     method: 'POST',
-                    url: `/reviews/collections/${collectionId}/cards/${cardId}/result`,
-                    body: { result: 'REMEMBERED' },
-                    failOnStatusCode: false
-                }).then((resultResponse) => {
-                    expect(resultResponse.status).to.equal(404);
+                    url: '/users/login',
+                    headers: {'X-CSRF-TOKEN': csrfToken},
+                    body: {
+                        email: anotherUser.email,
+                        password: anotherUser.password
+                    }
                 });
             });
+        }).then((loginResponse) => {
+            expect(loginResponse.status).to.equal(200);
+
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
+
+                return cy.request({
+                    method: 'POST',
+                    url: `/reviews/collections/${collectionId}/cards/${cardId}/result`,
+                    headers: {'X-CSRF-TOKEN': csrfToken},
+                    body: {result: 'REMEMBERED'},
+                    failOnStatusCode: false
+                });
+            });
+        }).then((resultResponse) => {
+            expect(resultResponse.status).to.equal(404);
         });
     });
 
     it('should start a review and return the first available card', () => {
-        cy.request({
-            method: 'POST',
-            url: `/reviews/collections/${collectionId}/start`
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: `/reviews/collections/${collectionId}/start`,
+                headers: {'X-CSRF-TOKEN': csrfToken}
+            });
         }).then((response) => {
             expect(response.status).to.equal(200);
             expect(response.body.cardId).to.equal(cardId);
@@ -514,38 +667,50 @@ describe('Review', () => {
     });
 
     it('should not start a review when the collection has no cards', () => {
-        cy.request({
-            method: 'POST',
-            url: '/collections',
-            body: {
-                name: 'Empty Collection'
-            }
+        const emptyCollectionName = `Empty Collection ${Date.now()}`;
+
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: '/collections',
+                headers: {'X-CSRF-TOKEN': csrfToken},
+                body: {
+                    name: emptyCollectionName
+                }
+            });
         }).then((response) => {
             expect(response.status).to.equal(201);
 
-            cy.request({
+            return cy.request({
                 method: 'GET',
                 url: '/collections'
-            }).then((response) => {
-                expect(response.status).to.equal(200);
+            });
+        }).then((response) => {
+            expect(response.status).to.equal(200);
 
-                const emptyCollection = response.body.find(
-                    (collection) => collection.name === 'Empty Collection'
-                );
-                expect(emptyCollection).to.exist;
+            const emptyCollection = response.body.find(
+                (collection) => collection.name === emptyCollectionName
+            );
 
-                const emptyCollectionId = emptyCollection.id;
+            expect(emptyCollection).to.exist;
 
-                cy.request({
+            const emptyCollectionId = emptyCollection.id;
+
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
+
+                return cy.request({
                     method: 'POST',
                     url: `/reviews/collections/${emptyCollectionId}/start`,
+                    headers: {'X-CSRF-TOKEN': csrfToken},
                     failOnStatusCode: false
-                }).then((response) => {
-                    expect(response.status).to.equal(400);
                 });
             });
+        }).then((response) => {
+            expect(response.status).to.equal(400);
         });
-
     });
 
     it('should not start a review for another user collection', () => {
@@ -556,31 +721,144 @@ describe('Review', () => {
             confirmPassword: 'password123'
         };
 
-        cy.request({
-            method: 'POST',
-            url: '/users',
-            body: anotherUser
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: '/users',
+                headers: {'X-CSRF-TOKEN': csrfToken},
+                body: anotherUser
+            });
         }).then((response) => {
             expect(response.status).to.equal(201);
 
-            cy.request({
-                method: 'POST',
-                url: '/users/login',
-                body: {
-                    email: anotherUser.email,
-                    password: anotherUser.password
-                }
-            }).then((response) => {
-                expect(response.status).to.equal(200);
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
 
-                cy.request({
+                return cy.request({
                     method: 'POST',
-                    url: `/reviews/collections/${collectionId}/start`,
-                    failOnStatusCode: false
-                }).then((response) => {
-                    expect(response.status).to.equal(404);
+                    url: '/users/login',
+                    headers: {'X-CSRF-TOKEN': csrfToken},
+                    body: {
+                        email: anotherUser.email,
+                        password: anotherUser.password
+                    }
                 });
             });
+        }).then((response) => {
+            expect(response.status).to.equal(200);
+
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
+
+                return cy.request({
+                    method: 'POST',
+                    url: `/reviews/collections/${collectionId}/start`,
+                    headers: {'X-CSRF-TOKEN': csrfToken},
+                    failOnStatusCode: false
+                });
+            });
+        }).then((response) => {
+            expect(response.status).to.equal(404);
+        });
+    });
+
+    it('should not start a review when the collection has no cards', () => {
+        const emptyCollectionName = `Empty Collection ${Date.now()}`;
+
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: '/collections',
+                headers: {'X-CSRF-TOKEN': csrfToken},
+                body: {
+                    name: emptyCollectionName
+                }
+            });
+        }).then((response) => {
+            expect(response.status).to.equal(201);
+
+            return cy.request({
+                method: 'GET',
+                url: '/collections'
+            });
+        }).then((response) => {
+            expect(response.status).to.equal(200);
+
+            const emptyCollection = response.body.find(
+                (collection) => collection.name === emptyCollectionName
+            );
+
+            expect(emptyCollection).to.exist;
+
+            const emptyCollectionId = emptyCollection.id;
+
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
+
+                return cy.request({
+                    method: 'POST',
+                    url: `/reviews/collections/${emptyCollectionId}/start`,
+                    headers: {'X-CSRF-TOKEN': csrfToken},
+                    failOnStatusCode: false
+                });
+            });
+        }).then((response) => {
+            expect(response.status).to.equal(400);
+        });
+    });
+
+    it('should not start a review for another user collection', () => {
+        const anotherUser = {
+            name: 'Another Review E2E User',
+            email: `e2e-review-other-${Date.now()}-${Math.random()}@memorizez.com`,
+            password: 'password123',
+            confirmPassword: 'password123'
+        };
+
+        cy.request('GET', '/csrf').then((csrfResponse) => {
+            const csrfToken = csrfResponse.body.token;
+
+            return cy.request({
+                method: 'POST',
+                url: '/users',
+                headers: {'X-CSRF-TOKEN': csrfToken},
+                body: anotherUser
+            });
+        }).then((response) => {
+            expect(response.status).to.equal(201);
+
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
+
+                return cy.request({
+                    method: 'POST',
+                    url: '/users/login',
+                    headers: {'X-CSRF-TOKEN': csrfToken},
+                    body: {
+                        email: anotherUser.email,
+                        password: anotherUser.password
+                    }
+                });
+            });
+        }).then((response) => {
+            expect(response.status).to.equal(200);
+
+            return cy.request('GET', '/csrf').then((csrfResponse) => {
+                const csrfToken = csrfResponse.body.token;
+
+                return cy.request({
+                    method: 'POST',
+                    url: `/reviews/collections/${collectionId}/start`,
+                    headers: {'X-CSRF-TOKEN': csrfToken},
+                    failOnStatusCode: false
+                });
+            });
+        }).then((response) => {
+            expect(response.status).to.equal(404);
         });
     });
 
