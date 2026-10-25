@@ -35,7 +35,7 @@
             </h1>
             <p class="auth-subtitle">Comece a organizar seus estudos.</p>
 
-            <form id="registerForm">
+            <form id="registerForm" novalidate>
               <div class="mb-3">
                 <label for="registerName" class="form-label">Nome</label>
                 <input
@@ -44,8 +44,11 @@
                   id="registerName"
                   name="name"
                   autocomplete="name"
+                  maxlength="100"
                   required
+                  aria-describedby="registerNameError"
                 />
+                <p id="registerNameError" class="auth-error" hidden></p>
               </div>
 
               <div class="mb-3">
@@ -56,8 +59,11 @@
                   id="registerEmail"
                   name="email"
                   autocomplete="email"
+                  minlength="8"
                   required
+                  aria-describedby="registerEmailError"
                 />
+                <p id="registerEmailError" class="auth-error" hidden></p>
               </div>
 
               <div class="mb-3">
@@ -69,7 +75,9 @@
                   name="password"
                   autocomplete="new-password"
                   required
+                  aria-describedby="registerPasswordError"
                 />
+                <p id="registerPasswordError" class="auth-error" hidden></p>
               </div>
 
               <div class="mb-3">
@@ -83,12 +91,21 @@
                   name="confirmPassword"
                   autocomplete="new-password"
                   required
+                  aria-describedby="confirmPasswordError"
                 />
+                <p id="confirmPasswordError" class="auth-error" hidden></p>
               </div>
 
               <button type="submit" class="btn auth-button w-100">
                 Criar conta
               </button>
+
+              <p
+                id="registerFormError"
+                class="auth-error"
+                role="alert"
+                hidden
+              ></p>
             </form>
 
             <p class="auth-switch">
@@ -117,7 +134,7 @@
             </h1>
             <p class="auth-subtitle">Continue de onde seus estudos pararam.</p>
 
-            <form id="loginForm">
+            <form id="loginForm" novalidate>
               <div class="mb-3">
                 <label for="loginEmail" class="form-label">E-mail</label>
                 <input
@@ -127,7 +144,9 @@
                   name="email"
                   autocomplete="username"
                   required
+                  aria-describedby="loginEmailError"
                 />
+                <p id="loginEmailError" class="auth-error" hidden></p>
               </div>
 
               <div class="mb-3">
@@ -139,12 +158,16 @@
                   name="password"
                   autocomplete="current-password"
                   required
+                  aria-describedby="loginPasswordError"
                 />
+                <p id="loginPasswordError" class="auth-error" hidden></p>
               </div>
 
               <button type="submit" class="btn auth-button w-100">
                 Entrar
               </button>
+
+              <p id="loginFormError" class="auth-error" role="alert" hidden></p>
             </form>
 
             <p class="auth-switch">

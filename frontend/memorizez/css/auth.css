@@ -94,7 +94,7 @@
 
 .auth-card .form-control:focus {
   border-color: var(--brand-strong);
-  box-shadow: 0 0 0 0.2rem rgb(178 211 166 / 35%);
+  box-shadow: var(--color-shadow);
 }
 
 .auth-button {
@@ -143,6 +143,25 @@
   outline: 2px solid var(--brand-strong);
   outline-offset: 3px;
   border-radius: 2px;
+}
+
+.auth-error {
+  margin: 0.375rem 0 0;
+  color: var(--validation-error);
+  font-size: 0.875rem;
+}
+
+.auth-error[hidden] {
+  display: none;
+}
+
+.auth-card .form-control[aria-invalid="true"] {
+  border-color: var(--validation-error);
+}
+
+.auth-card .form-control[aria-invalid="true"]:focus {
+  border-color: var(--validation-error);
+  box-shadow: var(--validation-shadow);
 }
 
 @media (prefers-reduced-motion: reduce) {

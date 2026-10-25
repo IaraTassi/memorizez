@@ -12,6 +12,7 @@
   /* CTAs */
   --color-action: #587a4b;
   --color-action-hover: #496740;
+  --color-shadow: 0 0 0 0.2rem rgb(88 122 75 / 35%);
 
   /* Decorative accents */
   --accent-pink: #d3a6b2;
@@ -30,6 +31,10 @@
 
   /* Animation */
   --transition-smooth: 300ms ease;
+
+  /* Validation */
+  --validation-error: #a12636;
+  --validation-shadow: 0 0 0 0.2rem rgb(161 38 54 / 35%);
 }
 
 body {
