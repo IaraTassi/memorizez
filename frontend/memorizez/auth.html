@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Autenticação | MEMORIZEZ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/auth.js" defer></script>
+  </head>
+
+  <body>
+    <main class="auth-page">
+      <section class="auth-card-container" aria-label="Autenticação">
+        <div class="auth-card" id="authCard">
+          <section
+            class="auth-card__face auth-card__face--register"
+            aria-labelledby="registerTitle"
+          >
+            <img src="assets/logo.svg" alt="MemorizeZ" class="auth-logo" />
+
+            <h1 id="registerTitle" class="auth-title" tabindex="-1">
+              Criar conta
+            </h1>
+            <p class="auth-subtitle">Comece a organizar seus estudos.</p>
+
+            <form id="registerForm">
+              <div class="mb-3">
+                <label for="registerName" class="form-label">Nome</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="registerName"
+                  name="name"
+                  autocomplete="name"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="registerEmail" class="form-label">E-mail</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="registerEmail"
+                  name="email"
+                  autocomplete="email"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="registerPassword" class="form-label">Senha</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="registerPassword"
+                  name="password"
+                  autocomplete="new-password"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="confirmPassword" class="form-label">
+                  Confirmar senha
+                </label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  autocomplete="new-password"
+                  required
+                />
+              </div>
+
+              <button type="submit" class="btn auth-button w-100">
+                Criar conta
+              </button>
+            </form>
+
+            <p class="auth-switch">
+              Já tem uma conta?
+              <button
+                type="button"
+                class="auth-link"
+                data-auth-flip="login"
+                aria-label="Ir para entrar"
+              >
+                Entrar
+              </button>
+            </p>
+          </section>
+
+          <section
+            class="auth-card__face auth-card__face--login"
+            aria-labelledby="loginTitle"
+            aria-hidden="true"
+            inert
+          >
+            <img src="assets/logo.svg" alt="MemorizeZ" class="auth-logo" />
+
+            <h1 id="loginTitle" class="auth-title" tabindex="-1">
+              Bem-vindo de volta!
+            </h1>
+            <p class="auth-subtitle">Continue de onde seus estudos pararam.</p>
+
+            <form id="loginForm">
+              <div class="mb-3">
+                <label for="loginEmail" class="form-label">E-mail</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="loginEmail"
+                  name="email"
+                  autocomplete="username"
+                  required
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="loginPassword" class="form-label">Senha</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="loginPassword"
+                  name="password"
+                  autocomplete="current-password"
+                  required
+                />
+              </div>
+
+              <button type="submit" class="btn auth-button w-100">
+                Entrar
+              </button>
+            </form>
+
+            <p class="auth-switch">
+              Ainda não tem uma conta?
+              <button
+                type="button"
+                class="auth-link"
+                data-auth-flip="register"
+                aria-label="Ir para criar conta"
+              >
+                Criar conta
+              </button>
+            </p>
+          </section>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
