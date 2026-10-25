@@ -35,6 +35,7 @@
   /* Validation */
   --validation-error: #a12636;
   --validation-shadow: 0 0 0 0.2rem rgb(161 38 54 / 35%);
+  --validation-success: #287a3d;
 }
 
 body {

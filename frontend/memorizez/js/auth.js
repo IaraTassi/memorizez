@@ -51,6 +51,7 @@ function clearFieldError(input) {
 function showFormError(form, message) {
   const errorElement = form.querySelector('[role="alert"]');
 
+  errorElement.classList.remove("auth-error--success");
   errorElement.textContent = message;
   errorElement.hidden = false;
 }
@@ -58,8 +59,17 @@ function showFormError(form, message) {
 function clearFormError(form) {
   const errorElement = form.querySelector('[role="alert"]');
 
+  errorElement.classList.remove("auth-error--success");
   errorElement.textContent = "";
   errorElement.hidden = true;
+}
+
+function showFormSuccess(form, message) {
+  const errorElement = form.querySelector('[role="alert"]');
+
+  errorElement.textContent = message;
+  errorElement.classList.add("auth-error--success");
+  errorElement.hidden = false;
 }
 
 function validateRequired(input, message) {
@@ -113,7 +123,7 @@ const fields = document.querySelectorAll(
 
 fields.forEach(clearErrorWhileTyping);
 
-registerForm.addEventListener("submit", (event) => {
+registerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   clearFormError(registerForm);
@@ -147,13 +157,54 @@ registerForm.addEventListener("submit", (event) => {
   }
 
   if (nameValid && emailValid && passwordValid && confirmPasswordValid) {
+    const submitButton = registerForm.querySelector('button[type="submit"]');
+
+    submitButton.disabled = true;
+
+    try {
+      await apiRequest("/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name.value.trim(),
+          email: email.value.trim(),
+          password: password.value,
+          confirmPassword: confirmPassword.value,
+        }),
+      });
+
+      showFormSuccess(registerForm, "Conta criada com sucesso!");
+      registerForm.reset();
+
+      setTimeout(() => {
+        clearFormError(registerForm);
+        showAuthFace("login");
+      }, 1500);
+    } catch (error) {
+      if (error.status === 400 || error.status === 409) {
+        showFormError(
+          registerForm,
+          "Não foi possível criar a conta. Verifique os dados ou tente outro e-mail.",
+        );
+      } else {
+        showFormError(
+          registerForm,
+          "Não foi possível criar sua conta agora. Tente novamente.",
+        );
+      }
+    } finally {
+      submitButton.disabled = false;
+    }
+
     return;
   }
 
   focusFirstInvalid(registerForm);
 });
 
-loginForm.addEventListener("submit", (event) => {
+loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   clearFormError(loginForm);
@@ -165,9 +216,38 @@ loginForm.addEventListener("submit", (event) => {
 
   const passwordValid = validateRequired(password, "Informe sua senha.");
 
-  if (emailValid && passwordValid) {
+  if (!emailValid || !passwordValid) {
+    focusFirstInvalid(loginForm);
     return;
   }
 
-  focusFirstInvalid(loginForm);
+  const submitButton = loginForm.querySelector('button[type="submit"]');
+
+  submitButton.disabled = true;
+
+  try {
+    await apiRequest("/users/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: email.value.trim(),
+        password: password.value,
+      }),
+    });
+
+    showFormSuccess(loginForm, "Login realizado com sucesso!");
+  } catch (error) {
+    if (error.status === 401 || error.status === 400) {
+      showFormError(loginForm, "E-mail ou senha inválidos.");
+    } else {
+      showFormError(
+        loginForm,
+        "Não foi possível entrar agora. Tente novamente.",
+      );
+    }
+  } finally {
+    submitButton.disabled = false;
+  }
 });
