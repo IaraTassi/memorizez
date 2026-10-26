@@ -2,12 +2,13 @@
   /* Base */
   --background: #f2f2f2;
   --surface: #ffffff;
-  --hero-background: #e2e1e0;
+  --hero-background: #f8f8f5;
 
   /* Text */
   --font-family-base: "Inter", sans-serif;
   --text-primary: #292929;
   --text-secondary: #666666;
+  --text-tertiary: #ffffff;
 
   /* CTAs */
   --color-action: #587a4b;
@@ -38,6 +39,129 @@
   --validation-success: #287a3d;
 }
 
+/* Componentes compartilhados */
+
 body {
   font-family: var(--font-family-base);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+}
+
+.btn {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  font-family: var(--font-family-base);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--transition-smooth),
+    border-color var(--transition-smooth),
+    color var(--transition-smooth),
+    transform var(--transition-smooth);
+}
+
+.button-primary,
+.auth-button,
+.hero-button {
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--surface);
+}
+
+.button-primary:hover,
+.auth-button:hover,
+.hero-button:hover {
+  border-color: var(--color-action-hover);
+  background: var(--color-action-hover);
+  color: var(--surface);
+}
+
+.button-primary:active,
+.auth-button:active,
+.hero-button:active {
+  transform: scale(0.98);
+}
+
+.button-secondary {
+  border-color: var(--color-action);
+  background: var(--neutral);
+  color: var(--text-primary);
+}
+
+.button-secondary:hover {
+  border-color: var(--color-action-hover);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-action-hover);
+  outline-offset: 3px;
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.form-control {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.65rem 0.75rem;
+
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text-primary);
+
+  font-family: var(--font-family-base);
+  font-size: 1rem;
+  line-height: 1.4;
+
+  transition:
+    border-color var(--transition-smooth),
+    box-shadow var(--transition-smooth);
+}
+
+.form-control:focus {
+  border-color: var(--color-action);
+  outline: none;
+  box-shadow: var(--color-shadow);
+}
+
+.form-control[aria-invalid="true"] {
+  border-color: var(--validation-error);
+}
+
+.form-control[aria-invalid="true"]:focus {
+  border-color: var(--validation-error);
+  box-shadow: var(--validation-shadow);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--text-primary);
+  font-weight: 500;
 }
