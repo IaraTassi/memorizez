@@ -16,7 +16,6 @@
     />
     <link rel="stylesheet" href="css/styles.css" />
     <link rel="stylesheet" href="css/index.css" />
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
   </head>
 
   <body>
@@ -53,8 +52,9 @@
                 Um espaço para estudar com intenção, consistência e autonomia.
               </p>
               <div class="hero-action">
-                <a class="btn button-primary" href="#beneficios">Conhecer proposta</a>                  
-                </a>
+                <a class="btn button-primary button-proposal" href="#beneficios"
+                  >Conhecer proposta</a
+                >
               </div>
             </div>
 
@@ -101,14 +101,145 @@
             </div>
           </section>
 
-          <section class="section benefits" id="beneficios"></section>
+          <section class="section benefits" id="beneficios">
+            <div class="section-inner">
+              <div class="section-heading">
+                <h2>
+                  Estudar não é só reconhecer.<br />
+                  É conseguir recuperar.
+                </h2>
+                <p>
+                  O MEMORIZEZ foi pensado para apoiar uma rotina em que você
+                  participa ativamente do próprio aprendizado, com ferramentas
+                  simples e um caminho claro.
+                </p>
+              </div>
+              <div class="benefit-grid">
+                <article class="benefit-card">
+                  <div class="benefit-icon" aria-hidden="true">↻</div>
+                  <h3>Revisões espaçadas</h3>
+                  <p>
+                    Retomar o conteúdo em diferentes momentos pode ajudar a
+                    reduzir o esquecimento e favorecer a retenção a longo prazo.
+                    Em vez de tentar decorar tudo de uma vez, volte ao que
+                    aprendeu ao longo do tempo.
+                  </p>
+                </article>
 
-          <section class="section practice" id="pratica"></section>
+                <article class="benefit-card">
+                  <div class="benefit-icon" aria-hidden="true">✧</div>
+                  <h3>Recuperação ativa</h3>
+                  <p>
+                    Antes de consultar a resposta, tente buscá-la na memória.
+                    Esse esforço ajuda a fortalecer a aprendizagem e torna o
+                    estudo mais participativo do que simplesmente reler
+                    anotações.
+                  </p>
+                </article>
 
-          <section class="cta" id="acesso"></section>
+                <article class="benefit-card">
+                  <div class="benefit-icon" aria-hidden="true">▤</div>
+                  <h3>Conhecimento organizado</h3>
+                  <p>
+                    Reúna perguntas e respostas em coleções para organizar seus
+                    materiais e voltar a eles quando precisar revisar ou estudar
+                    livremente.
+                  </p>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <section class="section practice" id="pratica">
+            <div class="section-inner practice-layout">
+              <div class="practice-info reveal">
+                <h2>Dê espaço para sua memória trabalhar.</h2>
+                <p>
+                  Quando a resposta fica sempre à vista, é fácil confundir
+                  familiaridade com aprendizado. Tente responder primeiro;
+                  depois, revele o cartão e confira o que conseguiu lembrar.
+                </p>
+                <ul class="practice-list">
+                  <li>
+                    <span class="check">✓</span
+                    ><span>Leia a pergunta com atenção.</span>
+                  </li>
+                  <li>
+                    <span class="check">✓</span
+                    ><span
+                      >Tente recuperar a informação antes de virar o
+                      cartão.</span
+                    >
+                  </li>
+                  <li>
+                    <span class="check">✓</span
+                    ><span
+                      >Confira a resposta e reflita sobre o que lembrou.</span
+                    >
+                  </li>
+                </ul>
+              </div>
+
+              <div class="mini-demo reveal">
+                <div class="demo-top">
+                  <span>Uma pequena demonstração</span
+                  ><span id="demoState">Pergunta</span>
+                </div>
+                <div class="demo-progress"><span></span></div>
+                <div class="demo-question" id="demoQuestion">
+                  <p id="demoText">
+                    Por que é útil revisar um conteúdo depois de algum tempo?
+                  </p>
+                </div>
+                <div class="demo-actions">
+                  <button
+                    class="btn button-secondary"
+                    type="button"
+                    id="resetDemo"
+                  >
+                    Ver pergunta
+                  </button>
+                  <button
+                    class="btn button-primary"
+                    type="button"
+                    id="revealDemo"
+                  >
+                    Revelar resposta
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="cta" id="acesso">
+            <div class="cta-inner">
+              <h2>
+                Construa uma relação melhor, <br />
+                com o que aprende.
+              </h2>
+              <p>
+                Organize suas ideias, pratique a lembrança e desenvolva uma
+                rotina de estudos mais consciente, um cartão de cada vez.
+              </p>
+              <a
+                class="btn button-secondary button-create"
+                href="auth.html?mode=register"
+                >Criar conta</a
+              >
+            </div>
+          </section>
         </main>
       </div>
-      <footer></footer>
+      <footer>
+        <div class="footer-inner">
+          <a class="footer-brand" href="#inicio" aria-label="MEMORIZEZ, início">
+            <img src="assets/logo.svg" alt="" class="hero-logo" />
+          </a>
+          <span>© 2026 Todos os direitos reservados.</span>
+        </div>
+      </footer>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/index.js" defer></script>
   </body>
 </html>
