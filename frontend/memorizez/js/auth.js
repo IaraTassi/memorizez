@@ -26,6 +26,15 @@ function showAuthFace(face) {
   activeTitle.focus();
 }
 
+const params = new URLSearchParams(window.location.search);
+const initialMode = params.get("mode");
+
+if (initialMode === "login") {
+  showAuthFace("login");
+} else if (initialMode === "register") {
+  showAuthFace("register");
+}
+
 flipButtons.forEach((button) => {
   button.addEventListener("click", () => {
     showAuthFace(button.dataset.authFlip);

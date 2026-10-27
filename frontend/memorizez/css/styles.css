@@ -25,6 +25,7 @@
 
   /* Neutral */
   --neutral: #d3c9b0;
+  --neutral-hover: #c9c0a6;
 
   /* Borders and effects */
   --border: #d9d9d9;
@@ -109,8 +110,7 @@ button {
 
 .button-secondary:hover {
   border-color: var(--color-action-hover);
-  background: var(--surface);
-  color: var(--text-primary);
+  background: var(--neutral-hover);
 }
 
 .btn:focus-visible {
