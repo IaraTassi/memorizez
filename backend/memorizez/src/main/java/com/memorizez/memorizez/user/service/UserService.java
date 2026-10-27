@@ -1,6 +1,7 @@
 package com.memorizez.memorizez.user.service;
 
 import com.memorizez.memorizez.user.User;
+import com.memorizez.memorizez.user.dto.CurrentUserResponse;
 import com.memorizez.memorizez.user.dto.RegisterUserRequest;
 import com.memorizez.memorizez.user.exception.EmailAlreadyRegisteredException;
 import com.memorizez.memorizez.user.exception.PasswordMismatchException;
@@ -49,5 +50,18 @@ public class UserService {
                         new UserNotFoundException("User not found"));
 
         userRepository.delete(user);
+    }
+
+    public CurrentUserResponse getCurrentUser(Authentication authentication) {
+        User user = userRepository
+                .findByEmail(authentication.getName())
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found"));
+
+        return new CurrentUserResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail()
+        );
     }
 }

@@ -1,5 +1,6 @@
 package com.memorizez.memorizez.user.controller;
 
+import com.memorizez.memorizez.user.dto.CurrentUserResponse;
 import com.memorizez.memorizez.user.dto.LoginRequest;
 import com.memorizez.memorizez.user.dto.RegisterUserRequest;
 import com.memorizez.memorizez.user.service.UserService;
@@ -106,6 +107,17 @@ public class UserController {
         );
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    @Operation(
+            summary = "Consultar usuário autenticado",
+            description = "Retorna os dados básicos do usuário da sessão atual."
+    )
+    public ResponseEntity<CurrentUserResponse> getCurrentUser(
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(userService.getCurrentUser(authentication));
     }
 
 }
