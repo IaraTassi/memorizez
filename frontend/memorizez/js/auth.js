@@ -247,6 +247,8 @@ loginForm.addEventListener("submit", async (event) => {
     });
 
     showFormSuccess(loginForm, "Login realizado com sucesso!");
+
+    window.location.href = "collections.html";
   } catch (error) {
     if (error.status === 401 || error.status === 400) {
       showFormError(loginForm, "E-mail ou senha inválidos.");

@@ -492,7 +492,7 @@ p {
 
 footer {
   padding: 27px 24px;
-  background: var(--surface);
+  background: var(--background);
   border-top: 1px solid var(--border);
 }
 
