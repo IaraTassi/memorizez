@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  const modalOverlay = document.querySelector(".modal-overlay");
+  const modalOverlay = document.querySelector("#account-confirmation-overlay");
 
   if (!modalOverlay) return;
 

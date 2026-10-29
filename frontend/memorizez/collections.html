@@ -85,7 +85,39 @@
       </header>
     </div>
 
-    <main id="main-content" class="private-main"></main>
+    <main id="main-content" class="private-main">
+      <section class="page-container" aria-labelledby="pageTitle">
+        <header class="page-heading">
+          <div>
+            <h1 id="pageTitle">Minhas coleções</h1>
+            <p>Organize seus conteúdos de estudo.</p>
+          </div>
+
+          <button
+            class="btn button-primary"
+            type="button"
+            id="createCollectionButton"
+          >
+            Criar coleção
+          </button>
+        </header>
+
+        <div
+          id="collectionsFeedback"
+          role="status"
+          aria-live="polite"
+          hidden
+        ></div>
+
+        <section
+          id="collectionsList"
+          aria-label="Suas coleções"
+          aria-live="polite"
+        >
+          <p>Carregando coleções...</p>
+        </section>
+      </section>
+    </main>
 
     <footer>
       <div class="footer-inner" id="private-footer">
@@ -100,7 +132,7 @@
       </div>
     </footer>
 
-    <div class="modal-overlay" hidden>
+    <div class="modal-overlay" id="account-confirmation-overlay" hidden>
       <section
         class="confirmation-modal"
         role="dialog"
@@ -146,8 +178,124 @@
       </section>
     </div>
 
+    <div class="modal-overlay" id="collection-modal-overlay" hidden>
+      <section
+        class="confirmation-modal collection-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="collection-modal-title"
+        aria-describedby="collection-modal-description"
+        tabindex="-1"
+      >
+        <button
+          class="modal-close"
+          id="close-collection-form"
+          type="button"
+          aria-label="Fechar formulário"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+
+        <h2 class="modal-title" id="collection-modal-title">Nova coleção</h2>
+
+        <p class="modal-message" id="collection-modal-description">
+          Dê um nome à sua coleção para organizar seus cartões de estudo.
+        </p>
+
+        <form id="collection-form">
+          <div class="collection-form-field">
+            <label class="form-label" for="collection-name">
+              Nome da coleção
+            </label>
+
+            <input
+              class="form-control"
+              type="text"
+              id="collection-name"
+              name="name"
+              maxlength="100"
+              required
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="modal-actions">
+            <button
+              class="btn button-secondary"
+              id="cancel-collection-form"
+              type="button"
+            >
+              Cancelar
+            </button>
+
+            <button
+              class="btn button-primary"
+              id="save-collection"
+              type="submit"
+            >
+              Criar coleção
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="modal-overlay" id="delete-collection-modal-overlay" hidden>
+      <section
+        class="confirmation-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-collection-modal-title"
+        aria-describedby="delete-collection-modal-description"
+        tabindex="-1"
+      >
+        <h2 class="modal-title" id="delete-collection-modal-title">
+          Excluir coleção
+        </h2>
+
+        <p class="modal-message" id="delete-collection-modal-description">
+          Tem certeza de que deseja excluir esta coleção? Todos os cartões e
+          dados associados a ela também serão excluídos. Esta ação não poderá
+          ser desfeita.
+        </p>
+
+        <div class="modal-actions">
+          <button
+            class="btn button-secondary"
+            id="cancel-delete-collection"
+            type="button"
+          >
+            Cancelar
+          </button>
+
+          <button
+            class="btn button-primary"
+            id="confirm-delete-collection"
+            type="button"
+          >
+            Excluir coleção
+          </button>
+        </div>
+      </section>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/api.js" defer></script>
     <script src="js/private-layout.js" defer></script>
+    <script src="js/collections.js" defer></script>
   </body>
 </html>
