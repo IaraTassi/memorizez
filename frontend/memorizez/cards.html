@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meus cartões — MEMORIZEZ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/cards.css" />
+  </head>
+
+  <body class="private-page" data-page="cards">
+    <main id="main-content" class="private-main">
+      <section class="page-container" aria-labelledby="pageTitle">
+        <a class="page-back-link" href="collections.html">
+          ← Voltar às coleções
+        </a>
+        <header class="page-heading">
+          <div class="cards-page-heading">
+            <div class="cards-page-icon" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+                />
+                <path d="M3 10h18" />
+              </svg>
+            </div>
+
+            <div>
+              <h1 id="pageTitle">Carregando coleção...</h1>
+              <p id="collectionDescription" hidden></p>
+            </div>
+          </div>
+
+          <button
+            class="btn button-primary"
+            id="createCardButton"
+            type="button"
+          >
+            Novo cartão
+          </button>
+        </header>
+
+        <div id="cardsFeedback" role="status" aria-live="polite" hidden></div>
+
+        <div id="cardsList" class="cards-list">
+          <p>Carregando cartões...</p>
+        </div>
+      </section>
+    </main>
+
+    <div class="modal-overlay" id="card-modal-overlay" hidden>
+      <section
+        class="confirmation-modal card-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="card-modal-title"
+        aria-describedby="card-modal-description"
+        tabindex="-1"
+      >
+        <button
+          class="modal-close"
+          id="close-card-form"
+          type="button"
+          aria-label="Fechar formulário"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+
+        <h2 class="modal-title" id="card-modal-title">Novo cartão</h2>
+
+        <p class="modal-message" id="card-modal-description">
+          Preencha a frente e o verso do cartão. As observações são opcionais.
+        </p>
+
+        <p id="card-edit-warning" class="card-edit-warning" hidden>
+          Atenção: ao salvar alterações, o ciclo de revisão deste cartão será
+          reiniciado.
+        </p>
+
+        <form id="card-form">
+          <div class="card-form-field">
+            <label class="form-label" for="card-front">Frente</label>
+            <textarea
+              class="form-control"
+              id="card-front"
+              name="front"
+              maxlength="200"
+              rows="3"
+              required
+            ></textarea>
+          </div>
+
+          <div class="card-form-field">
+            <label class="form-label" for="card-back">Verso</label>
+            <textarea
+              class="form-control"
+              id="card-back"
+              name="back"
+              maxlength="400"
+              rows="4"
+              required
+            ></textarea>
+          </div>
+
+          <div class="card-form-field">
+            <label class="form-label" for="card-notes">
+              Observações (opcional)
+            </label>
+            <textarea
+              class="form-control"
+              id="card-notes"
+              name="notes"
+              maxlength="300"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="modal-actions">
+            <button
+              class="btn button-secondary"
+              id="cancel-card-form"
+              type="button"
+            >
+              Cancelar
+            </button>
+
+            <button class="btn button-primary" id="save-card" type="submit">
+              Criar cartão
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="modal-overlay" id="delete-card-overlay" hidden>
+      <section
+        class="confirmation-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-card-title"
+        aria-describedby="delete-card-modal-description"
+        tabindex="-1"
+      >
+        <h2 class="modal-title" id="delete-card-title">Excluir cartão?</h2>
+
+        <p class="modal-message" id="delete-card-modal-description">
+          Tem certeza de que deseja excluir este cartão? Os dados associados a
+          ele também serão excluídos. Esta ação não poderá ser desfeita.
+        </p>
+
+        <div class="modal-actions">
+          <button
+            class="btn button-secondary"
+            id="cancel-delete-card"
+            type="button"
+          >
+            Cancelar
+          </button>
+
+          <button
+            class="btn button-primary"
+            id="confirm-delete-card"
+            type="button"
+          >
+            Excluir cartão
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/api.js" defer></script>
+    <script src="js/private-layout.js" defer></script>
+    <script src="js/cards.js" defer></script>
+  </body>
+</html>
