@@ -19,72 +19,6 @@
   </head>
 
   <body class="private-page" data-page="collections">
-    <div id="private-header">
-      <header class="navbar">
-        <a
-          class="brand"
-          href="collections.html"
-          aria-label="MEMORIZEZ, Minhas coleções"
-        >
-          <img src="assets/logo.svg" alt="" class="hero-logo" />
-        </a>
-        <nav class="nav-links" aria-label="Navegação principal">
-          <a href="collections.html">Coleções</a>
-          <a href="review.html">Revisão</a>
-          <a href="free-study.html">Estudo livre</a>
-          <a href="history.html">Histórico</a>
-        </nav>
-        <div class="nav-actions">
-          <div class="dropdown">
-            <button
-              class="profile-button dropdown-toggle p-0 border-0 bg-transparent d-flex align-items-center"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              <svg
-                class="profile-icon"
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="8" r="4" />
-                <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
-              </svg>
-              <span class="profile-name">Meu perfil</span>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li>
-                <button
-                  class="dropdown-item"
-                  type="button"
-                  data-modal-open="logout"
-                >
-                  Sair
-                </button>
-              </li>
-              <li>
-                <button
-                  class="dropdown-item dropdown-item-danger"
-                  type="button"
-                  data-modal-open="delete-account"
-                >
-                  Excluir conta
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </header>
-    </div>
-
     <main id="main-content" class="private-main">
       <section class="page-container" aria-labelledby="pageTitle">
         <header class="page-heading">
@@ -118,65 +52,6 @@
         </section>
       </section>
     </main>
-
-    <footer>
-      <div class="footer-inner" id="private-footer">
-        <a
-          class="footer-brand"
-          href="collections.html"
-          aria-label="MEMORIZEZ, Minhas coleções"
-        >
-          <img src="assets/logo.svg" alt="" class="hero-logo" />
-        </a>
-        <span>© 2026 Todos os direitos reservados.</span>
-      </div>
-    </footer>
-
-    <div class="modal-overlay" id="account-confirmation-overlay" hidden>
-      <section
-        class="confirmation-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirmation-title"
-        aria-describedby="confirmation-message"
-        tabindex="-1"
-      >
-        <button class="modal-close" type="button" aria-label="Fechar janela">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        </button>
-
-        <h2 class="modal-title" id="confirmation-title">Deseja sair?</h2>
-
-        <p class="modal-message" id="confirmation-message">
-          Sua sessão será encerrada. Você precisará entrar novamente para
-          acessar suas coleções e seus estudos.
-        </p>
-
-        <div class="modal-actions">
-          <button class="btn button-secondary modal-cancel" type="button">
-            Cancelar
-          </button>
-
-          <button class="btn button-primary modal-confirm" type="button">
-            Sair
-          </button>
-        </div>
-      </section>
-    </div>
 
     <div class="modal-overlay" id="collection-modal-overlay" hidden>
       <section
