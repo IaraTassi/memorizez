@@ -332,6 +332,18 @@ button {
   margin-bottom: 32px;
 }
 
+.cards-page-icon {
+  display: flex;
+  flex: 0 0 40px;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--accent-green-soft);
+  color: var(--color-action);
+}
+
 /* Rodapé das páginas privadas */
 
 footer {
@@ -430,4 +442,118 @@ footer {
 
 .modal-confirm {
   width: 120px;
+}
+
+/* Modais de cartões */
+
+.confirmation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 45%);
+}
+
+.confirmation-overlay[hidden] {
+  display: none;
+}
+
+.confirmation-overlay .confirmation-modal {
+  position: relative;
+  width: min(100%, 480px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.confirmation-overlay .confirmation-modal h2 {
+  margin: 0 0 12px;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.confirmation-overlay .confirmation-modal p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.card-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-modal {
+  width: min(100%, 480px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+
+.card-modal label {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.card-modal textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  resize: vertical;
+}
+
+.card-modal textarea:focus {
+  outline: 2px solid var(--color-action);
+  outline-offset: 2px;
+}
+
+#card-edit-warning[hidden] {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  #card-modal-overlay,
+  #delete-card-overlay {
+    padding: 16px;
+  }
+
+  #card-modal-overlay .confirmation-modal,
+  #delete-card-overlay .confirmation-modal {
+    padding: 22px;
+  }
+
+  #card-modal-overlay .modal-actions,
+  #delete-card-overlay .modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  #card-modal-overlay .modal-actions .btn,
+  #delete-card-overlay .modal-actions .btn {
+    width: 100%;
+  }
 }

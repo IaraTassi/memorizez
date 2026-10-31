@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  CardModals.render();
+
   const pageTitle = document.querySelector("#pageTitle");
   const collectionDescription = document.querySelector(
     "#collectionDescription",
@@ -35,8 +37,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   const params = new URLSearchParams(window.location.search);
   const collectionId = params.get("collectionId");
 
-  if (!pageTitle || !collectionDescription || !cardsList || !cardsFeedback) {
-    console.error("Não foi possível encontrar os elementos da página.");
+  if (
+    !pageTitle ||
+    !collectionDescription ||
+    !cardsList ||
+    !cardsFeedback ||
+    !createCardButton ||
+    !cardModalOverlay ||
+    !cardModal ||
+    !cardForm ||
+    !cardFront ||
+    !cardBack ||
+    !cardNotes ||
+    !saveCardButton ||
+    !deleteCardOverlay ||
+    !confirmDeleteCardButton
+  ) {
+    console.error(
+      "Não foi possível encontrar os elementos necessários da página.",
+    );
     return;
   }
 
@@ -124,6 +143,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function prepareEditCard(card) {
+    if (
+      !cardModalTitle ||
+      !cardModalDescription ||
+      !cardEditWarning ||
+      !cardFront ||
+      !cardBack ||
+      !cardNotes ||
+      !saveCardButton
+    ) {
+      console.error("Não foi possível preparar o formulário de edição.");
+      return;
+    }
+
     editingCard = card;
 
     cardModalTitle.textContent = "Editar cartão";

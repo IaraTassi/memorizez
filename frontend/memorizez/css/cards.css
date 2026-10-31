@@ -5,18 +5,6 @@
   min-width: 0;
 }
 
-.cards-page-icon {
-  display: flex;
-  flex: 0 0 48px;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  background: var(--accent-green-soft);
-  color: var(--color-action);
-}
-
 .cards-page-heading h1 {
   margin: 0;
   font-size: 1.7rem;
