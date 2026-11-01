@@ -1,0 +1,180 @@
+.free-study-session-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.free-study-session-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.free-study-session-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.free-study-session-collection-name {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.free-study-session-progress-text {
+  flex: 0 0 auto;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.free-study-session-progress-track {
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  border-radius: inherit;
+  background: var(--border);
+}
+
+.free-study-session-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-action);
+  transition: width var(--transition-smooth);
+}
+
+.free-study-session-helper {
+  margin: 0 0 28px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: start;
+}
+
+.free-study-session-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  min-height: 340px;
+  padding: 36px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.free-study-session-card:hover {
+  border-color: var(--accent-green);
+  box-shadow: var(--shadow);
+}
+
+.free-study-session-actions {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 24px 0;
+}
+
+.free-study-session-button {
+  width: 100%;
+  max-width: 360px;
+}
+
+.free-study-session-front {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.free-study-session-front.is-revealed {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.free-study-session-back {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.free-study-session-notes {
+  width: 100%;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.free-study-session-completion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 340px;
+  padding: 36px;
+  margin-bottom: 24px;
+  background: var(--surface);
+  border: 1px solid var(--accent-green);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.free-study-session-completion-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.free-study-session-completion-description {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.free-study-session-message,
+.free-study-session-error {
+  margin: 0;
+  padding: 20px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .free-study-session-progress-bar {
+    transition: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .free-study-session-card,
+  .free-study-session-completion {
+    min-height: 300px;
+    padding: 24px 18px;
+  }
+}

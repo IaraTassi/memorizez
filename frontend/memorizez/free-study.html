@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Estudo livre — MEMORIZEZ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/free-study.css" />
+  </head>
+
+  <body class="private-page" data-page="free-study">
+    <main id="main-content" class="private-main">
+      <section class="page-container" aria-labelledby="pageTitle">
+        <div class="page-heading free-study-page-heading">
+          <h1 id="pageTitle">Minhas coleções</h1>
+          <p>Escolha uma coleção e estude seus cartões no seu próprio ritmo.</p>
+        </div>
+
+        <div
+          id="free-study-collections"
+          class="free-study-collections"
+          aria-live="polite"
+        ></div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/api.js" defer></script>
+    <script src="js/private-layout.js" defer></script>
+    <script src="js/free-study.js" defer></script>
+  </body>
+</html>
