@@ -136,6 +136,24 @@ button {
   transform: none;
 }
 
+/* Botões desabilitados durante o estudo */
+
+.button-primary:disabled {
+  background: var(--color-action);
+  border-color: var(--color-action);
+  color: var(--surface);
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.button-secondary:disabled {
+  background: var(--neutral);
+  border-color: var(--color-action);
+  color: var(--text-primary);
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 /* Formulário das páginas privadas */
 
 .form-control {
