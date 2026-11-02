@@ -118,8 +118,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     freeStudyButton.className = "btn button-secondary review-free-study-button";
     freeStudyButton.type = "button";
     freeStudyButton.textContent = "Estudo livre";
+    freeStudyButton.disabled = collection.cardCount === 0;
 
-    freeStudyButton.disabled = true;
+    freeStudyButton.addEventListener("click", () => {
+      window.location.href = `free-study-session.html?collectionId=${encodeURIComponent(collection.id)}`;
+    });
 
     actions.append(reviewButton, freeStudyButton);
     card.append(header, title, date, status, actions);
