@@ -74,6 +74,12 @@ public class CardService {
 
         cardRepository.save(card);
 
+        System.out.println("===== DIAGNÓSTICO DE TIMEZONE =====");
+        System.out.println("Timezone JVM: " + java.time.ZoneId.systemDefault());
+        System.out.println("Horário Local JVM: " + LocalDateTime.now());
+        System.out.println("Horário UTC: " + java.time.Instant.now());
+        System.out.println("===================================");
+
         historyRepository.save(
                 new History(
                         null,
