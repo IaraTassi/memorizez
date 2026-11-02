@@ -3,6 +3,7 @@ package com.memorizez.memorizez.collection.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Schema(description = "Dados de uma coleção de cartões de estudo")
 public class CollectionResponse {
@@ -12,13 +13,13 @@ public class CollectionResponse {
     @Schema(description = "Nome da coleção", example = "Java Fundamentos")
     private String name;
     @Schema(description = "Data de criação da coleção", example = "2026-10-21")
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
     @Schema(description = "Quantidade total de cartões da coleção", example = "20")
     private long cardCount;
     @Schema(description = "Quantidade de cartões disponíveis para estudo", example = "15")
     private long availableCardCount;
 
-    public CollectionResponse(String id, String name, LocalDate createdAt, long cardCount, long availableCardCount) {
+    public CollectionResponse(String id, String name, LocalDateTime createdAt, long cardCount, long availableCardCount) {
         this.id = id;
         this.name = name;
         this.createdAt = createdAt;
@@ -38,7 +39,7 @@ public class CollectionResponse {
         return name;
     }
 
-    public LocalDate getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 

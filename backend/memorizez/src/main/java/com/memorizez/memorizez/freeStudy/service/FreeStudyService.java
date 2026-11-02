@@ -42,7 +42,7 @@ public class FreeStudyService {
                         new UserNotFoundException("User not found"));
 
         return collectionRepository
-                .findAllByUserOrderByCreatedAtDesc(user)
+                .findAllByUserOrderByCreatedAtDescIdDesc(user)
                 .stream()
                 .map(collection ->
                         new FreeStudyCollectionResponse(
@@ -70,7 +70,7 @@ public class FreeStudyService {
 
         List<Card> cards =
                 cardRepository
-                        .findAllByCollectionOrderByCreatedAtAsc(collection);
+                        .findAllByCollectionOrderByCreatedAtAscIdAsc(collection);
 
         if (cards.isEmpty()) {
             return Optional.empty();
@@ -139,7 +139,7 @@ public class FreeStudyService {
                         new CardNotFoundException("Card not found"));
 
         List<Card> cards =
-                cardRepository.findAllByCollectionOrderByCreatedAtAsc(collection);
+                cardRepository.findAllByCollectionOrderByCreatedAtAscIdAsc(collection);
 
         int currentIndex = -1;
 

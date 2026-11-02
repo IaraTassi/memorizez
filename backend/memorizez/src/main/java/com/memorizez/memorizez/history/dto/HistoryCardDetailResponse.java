@@ -3,6 +3,7 @@ package com.memorizez.memorizez.history.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Schema(description = "Detalhes do cartão e de seu histórico de revisão")
 public record HistoryCardDetailResponse(
@@ -17,7 +18,7 @@ public record HistoryCardDetailResponse(
         @Schema(description = "Quantidade de edições", example = "1")
         long editCount,
         @Schema(description = "Data de criação do cartão", example = "2026-10-01")
-        LocalDate createdAt,
+        LocalDateTime createdAt,
         @Schema(description = "Data prevista para a próxima revisão", example = "2026-10-28")
         LocalDate nextReviewDate
 ) {

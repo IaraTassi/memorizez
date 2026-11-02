@@ -6,6 +6,7 @@ import com.memorizez.memorizez.user.User;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -21,7 +22,7 @@ public class Collection {
     private String name;
 
     @Column(nullable = false, updatable = false)
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -41,7 +42,7 @@ public class Collection {
         }
 
         if (createdAt == null) {
-            createdAt = AppTime.today();
+            createdAt = AppTime.now();
         }
     }
 
@@ -57,7 +58,7 @@ public class Collection {
         this.name = name;
     }
 
-    public LocalDate getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 

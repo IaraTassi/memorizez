@@ -57,7 +57,7 @@ public class HistoryService {
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         List<Collection> collections =
-                collectionRepository.findAllByUserOrderByCreatedAtDesc(user);
+                collectionRepository.findAllByUserOrderByCreatedAtDescIdDesc(user);
 
         return collections.stream()
                 .map(collection -> new HistoryCollectionResponse(

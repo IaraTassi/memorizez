@@ -160,7 +160,7 @@ public class CollectionServiceTest {
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        when(collectionRepository.findAllByUserOrderByCreatedAtDesc(user))
+        when(collectionRepository.findAllByUserOrderByCreatedAtDescIdDesc(user))
                 .thenReturn(List.of(collection1, collection2));
 
         when(cardRepository.countByCollection(collection1))
@@ -206,7 +206,7 @@ public class CollectionServiceTest {
         assertEquals(0, response.get(1).getAvailableCardCount());
 
         verify(collectionRepository)
-                .findAllByUserOrderByCreatedAtDesc(user);
+                .findAllByUserOrderByCreatedAtDescIdDesc(user);
 
         verify(cardRepository)
                 .countByCollection(collection1);
@@ -240,7 +240,7 @@ public class CollectionServiceTest {
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        when(collectionRepository.findAllByUserOrderByCreatedAtDesc(user))
+        when(collectionRepository.findAllByUserOrderByCreatedAtDescIdDesc(user))
                 .thenReturn(List.of());
 
         CollectionService service =
@@ -258,7 +258,7 @@ public class CollectionServiceTest {
         verify(userRepository)
                 .findByEmail("test@memorizez.com");
         verify(collectionRepository)
-                .findAllByUserOrderByCreatedAtDesc(user);
+                .findAllByUserOrderByCreatedAtDescIdDesc(user);
         verifyNoInteractions(cardRepository);
     }
 
@@ -285,7 +285,7 @@ public class CollectionServiceTest {
 
         assertThrows(UserNotFoundException.class, () -> service.findAll(authentication));
 
-        verify(collectionRepository, never()).findAllByUserOrderByCreatedAtDesc(any());
+        verify(collectionRepository, never()).findAllByUserOrderByCreatedAtDescIdDesc(any());
         verify(userRepository)
                 .findByEmail("unknown@memorizez.com");
         verifyNoInteractions(cardRepository);

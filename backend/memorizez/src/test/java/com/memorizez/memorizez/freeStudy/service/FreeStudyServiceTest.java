@@ -50,7 +50,7 @@ public class FreeStudyServiceTest {
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        when(collectionRepository.findAllByUserOrderByCreatedAtDesc(user))
+        when(collectionRepository.findAllByUserOrderByCreatedAtDescIdDesc(user))
                 .thenReturn(List.of(collection1, collection2));
 
         when(cardRepository.countByCollection(collection1))
@@ -87,7 +87,7 @@ public class FreeStudyServiceTest {
                 .findByEmail("test@memorizez.com");
 
         verify(collectionRepository)
-                .findAllByUserOrderByCreatedAtDesc(user);
+                .findAllByUserOrderByCreatedAtDescIdDesc(user);
 
         verify(cardRepository)
                 .countByCollection(collection1);
@@ -116,7 +116,7 @@ public class FreeStudyServiceTest {
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        when(collectionRepository.findAllByUserOrderByCreatedAtDesc(user))
+        when(collectionRepository.findAllByUserOrderByCreatedAtDescIdDesc(user))
                 .thenReturn(List.of());
 
         FreeStudyService service =
@@ -135,7 +135,7 @@ public class FreeStudyServiceTest {
                 .findByEmail("test@memorizez.com");
 
         verify(collectionRepository)
-                .findAllByUserOrderByCreatedAtDesc(user);
+                .findAllByUserOrderByCreatedAtDescIdDesc(user);
 
         verifyNoInteractions(cardRepository);
     }
@@ -214,7 +214,7 @@ public class FreeStudyServiceTest {
                 user
         )).thenReturn(Optional.of(collection));
 
-        when(cardRepository.findAllByCollectionOrderByCreatedAtAsc(collection))
+        when(cardRepository.findAllByCollectionOrderByCreatedAtAscIdAsc(collection))
                 .thenReturn(List.of(card));
 
         FreeStudyService service =
@@ -259,7 +259,7 @@ public class FreeStudyServiceTest {
                 );
 
         verify(cardRepository)
-                .findAllByCollectionOrderByCreatedAtAsc(collection);
+                .findAllByCollectionOrderByCreatedAtAscIdAsc(collection);
     }
 
     @Test
@@ -291,7 +291,7 @@ public class FreeStudyServiceTest {
                 user
         )).thenReturn(Optional.of(collection));
 
-        when(cardRepository.findAllByCollectionOrderByCreatedAtAsc(collection))
+        when(cardRepository.findAllByCollectionOrderByCreatedAtAscIdAsc(collection))
                 .thenReturn(List.of());
 
         FreeStudyService service =
@@ -319,7 +319,7 @@ public class FreeStudyServiceTest {
                 );
 
         verify(cardRepository)
-                .findAllByCollectionOrderByCreatedAtAsc(collection);
+                .findAllByCollectionOrderByCreatedAtAscIdAsc(collection);
     }
 
     @Test
@@ -710,7 +710,7 @@ public class FreeStudyServiceTest {
                 collection
         )).thenReturn(Optional.of(currentCard));
 
-        when(cardRepository.findAllByCollectionOrderByCreatedAtAsc(
+        when(cardRepository.findAllByCollectionOrderByCreatedAtAscIdAsc(
                 collection
         )).thenReturn(List.of(currentCard, nextCard));
 
@@ -771,7 +771,7 @@ public class FreeStudyServiceTest {
                 );
 
         verify(cardRepository)
-                .findAllByCollectionOrderByCreatedAtAsc(
+                .findAllByCollectionOrderByCreatedAtAscIdAsc(
                         collection
                 );
     }
@@ -815,7 +815,7 @@ public class FreeStudyServiceTest {
                 collection
         )).thenReturn(Optional.of(currentCard));
 
-        when(cardRepository.findAllByCollectionOrderByCreatedAtAsc(
+        when(cardRepository.findAllByCollectionOrderByCreatedAtAscIdAsc(
                 collection
         )).thenReturn(List.of(currentCard));
 
@@ -851,7 +851,7 @@ public class FreeStudyServiceTest {
                 );
 
         verify(cardRepository)
-                .findAllByCollectionOrderByCreatedAtAsc(
+                .findAllByCollectionOrderByCreatedAtAscIdAsc(
                         collection
                 );
     }

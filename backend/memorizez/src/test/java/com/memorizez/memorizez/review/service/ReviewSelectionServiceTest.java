@@ -504,7 +504,7 @@ public class ReviewSelectionServiceTest {
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        when(collectionRepository.findAllByUserOrderByCreatedAtDesc(user))
+        when(collectionRepository.findAllByUserOrderByCreatedAtDescIdDesc(user))
                 .thenReturn(List.of(collection1, collection2));
 
         when(cardRepository.findAvailableForReviewByCollection(
@@ -559,7 +559,7 @@ public class ReviewSelectionServiceTest {
                 .findByEmail("test@memorizez.com");
 
         verify(collectionRepository)
-                .findAllByUserOrderByCreatedAtDesc(user);
+                .findAllByUserOrderByCreatedAtDescIdDesc(user);
 
         verify(cardRepository)
                 .findAvailableForReviewByCollection(
@@ -602,7 +602,7 @@ public class ReviewSelectionServiceTest {
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        when(collectionRepository.findAllByUserOrderByCreatedAtDesc(user))
+        when(collectionRepository.findAllByUserOrderByCreatedAtDescIdDesc(user))
                 .thenReturn(List.of());
 
         ReviewService service =
@@ -624,7 +624,7 @@ public class ReviewSelectionServiceTest {
                 .findByEmail("test@memorizez.com");
 
         verify(collectionRepository)
-                .findAllByUserOrderByCreatedAtDesc(user);
+                .findAllByUserOrderByCreatedAtDescIdDesc(user);
 
         verifyNoInteractions(
                 cardRepository,
@@ -661,7 +661,7 @@ public class ReviewSelectionServiceTest {
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        when(collectionRepository.findAllByUserOrderByCreatedAtDesc(user))
+        when(collectionRepository.findAllByUserOrderByCreatedAtDescIdDesc(user))
                 .thenReturn(List.of(collection));
 
         when(cardRepository.findAvailableForReviewByCollection(
@@ -701,7 +701,7 @@ public class ReviewSelectionServiceTest {
                 .findByEmail("test@memorizez.com");
 
         verify(collectionRepository)
-                .findAllByUserOrderByCreatedAtDesc(user);
+                .findAllByUserOrderByCreatedAtDescIdDesc(user);
 
         verify(cardRepository)
                 .findAvailableForReviewByCollection(
@@ -753,7 +753,7 @@ public class ReviewSelectionServiceTest {
                 .findByEmail("unknown@memorizez.com");
 
         verify(collectionRepository, never())
-                .findAllByUserOrderByCreatedAtDesc(any(User.class));
+                .findAllByUserOrderByCreatedAtDescIdDesc(any(User.class));
 
         verify(cardRepository, never())
                 .findAvailableForReviewByCollection(

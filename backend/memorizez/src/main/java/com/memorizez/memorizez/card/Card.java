@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 
 import java.time.LocalDate;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +30,7 @@ public class Card {
     private String notes;
 
     @Column(nullable = false, updatable = false)
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
 
     @Column(nullable = false)
     private int rememberedCount = 0;
@@ -65,7 +66,7 @@ public class Card {
         }
 
         if (createdAt == null) {
-            createdAt = AppTime.today();
+            createdAt = AppTime.now();
         }
     }
 
@@ -97,7 +98,7 @@ public class Card {
         this.notes = notes;
     }
 
-    public LocalDate getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 

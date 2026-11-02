@@ -7,6 +7,7 @@ import com.memorizez.memorizez.card.exception.CardNotFoundException;
 import com.memorizez.memorizez.card.service.CardService;
 import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
 import com.memorizez.memorizez.exception.GlobalExceptionHandler;
+import com.memorizez.memorizez.time.AppTime;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -186,7 +187,7 @@ public class CardControllerTest {
                         "What is inheritance in OOP?",
                         "What is inheritance in object-oriented programming?",
                         "Inheritance allows a class to reuse attributes and methods from another class.",
-                        LocalDate.now(),
+                        AppTime.now(),
                         0, 0, 0
                 );
 
@@ -196,7 +197,7 @@ public class CardControllerTest {
                         "O que é Spring Boot?",
                         "Framework Java para desenvolvimento de aplicações",
                         "Usado no desenvolvimento da API do projeto",
-                        LocalDate.now(),
+                        AppTime.now(),
                         0, 0, 0
                 );
 

@@ -282,7 +282,7 @@ public class HistoryControllerTest {
                         12,
                         3,
                         2,
-                        LocalDate.of(2026, 9, 15),
+                        LocalDateTime.of(2026, 9, 15, 14, 30),
                         LocalDate.of(2026, 10, 7)
                 );
 
@@ -311,7 +311,7 @@ public class HistoryControllerTest {
                 .andExpect(jsonPath("$.notRememberedCount").value(3))
                 .andExpect(jsonPath("$.editCount").value(2))
                 .andExpect(jsonPath("$.createdAt")
-                        .value("2026-09-15"))
+                        .value("2026-09-15T14:30:00"))
                 .andExpect(jsonPath("$.nextReviewDate")
                         .value("2026-10-07"));
 

@@ -57,7 +57,7 @@ public class CollectionService {
         LocalDate today = AppTime.today();
 
         return collectionRepository
-                .findAllByUserOrderByCreatedAtDesc(user)
+                .findAllByUserOrderByCreatedAtDescIdDesc(user)
                 .stream()
                 .map(collection -> new CollectionResponse(
                         collection.getId(),

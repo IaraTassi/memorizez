@@ -66,7 +66,7 @@ public class HistoryServiceTest {
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        when(collectionRepository.findAllByUserOrderByCreatedAtDesc(user))
+        when(collectionRepository.findAllByUserOrderByCreatedAtDescIdDesc(user))
                 .thenReturn(List.of(javaCollection, englishCollection));
 
         when(cardRepository.countByCollection(javaCollection))
@@ -123,7 +123,7 @@ public class HistoryServiceTest {
                 .findByEmail("test@memorizez.com");
 
         verify(collectionRepository)
-                .findAllByUserOrderByCreatedAtDesc(user);
+                .findAllByUserOrderByCreatedAtDescIdDesc(user);
 
         verify(cardRepository)
                 .countByCollection(javaCollection);
@@ -154,7 +154,7 @@ public class HistoryServiceTest {
         when(userRepository.findByEmail("test@memorizez.com"))
                 .thenReturn(Optional.of(user));
 
-        when(collectionRepository.findAllByUserOrderByCreatedAtDesc(user))
+        when(collectionRepository.findAllByUserOrderByCreatedAtDescIdDesc(user))
                 .thenReturn(List.of());
 
         HistoryService service =
@@ -175,7 +175,7 @@ public class HistoryServiceTest {
                 .findByEmail("test@memorizez.com");
 
         verify(collectionRepository)
-                .findAllByUserOrderByCreatedAtDesc(user);
+                .findAllByUserOrderByCreatedAtDescIdDesc(user);
 
         verifyNoInteractions(
                 cardRepository,
@@ -998,7 +998,7 @@ public class HistoryServiceTest {
                 .thenReturn(cardId);
 
         when(card.getCreatedAt())
-                .thenReturn(LocalDate.of(2026, 9, 15));
+                .thenReturn(LocalDateTime.of(2026, 9, 15, 14, 30));
 
         History history1 = new History(
                 "history-1",
@@ -1135,7 +1135,7 @@ public class HistoryServiceTest {
                 .thenReturn(cardId);
 
         when(card.getCreatedAt())
-                .thenReturn(LocalDate.of(2026, 9, 15));
+                .thenReturn(LocalDateTime.of(2026, 9, 15, 14, 30));
 
         PageRequest pageable =
                 PageRequest.of(0, 10);

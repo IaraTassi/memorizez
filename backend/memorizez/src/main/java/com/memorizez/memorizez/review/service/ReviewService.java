@@ -385,7 +385,7 @@ public class ReviewService {
         LocalDate today = AppTime.today();
 
         return collectionRepository
-                .findAllByUserOrderByCreatedAtDesc(user)
+                .findAllByUserOrderByCreatedAtDescIdDesc(user)
                 .stream()
                 .map(collection -> {
 

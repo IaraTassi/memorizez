@@ -3,6 +3,7 @@ package com.memorizez.memorizez.card.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Schema(description = "Dados de um cartão de estudo")
 public class CardResponse {
@@ -16,7 +17,7 @@ public class CardResponse {
     @Schema(description = "Observações adicionais do cartão", example = "Revisar os conceitos de orientação a objetos.")
     private String notes;
     @Schema(description = "Data de criação do cartão", example = "2026-10-21")
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
     @Schema(description = "Quantidade de vezes que o cartão foi lembrado", example = "5")
     private Integer rememberedCount;
     @Schema(description = "Quantidade de vezes que o cartão não foi lembrado", example = "2")
@@ -29,7 +30,7 @@ public class CardResponse {
             String front,
             String back,
             String notes,
-            LocalDate createdAt,
+            LocalDateTime createdAt,
             Integer rememberedCount,
             Integer notRememberedCount,
             Integer editCount) {
@@ -60,7 +61,7 @@ public class CardResponse {
         return notes;
     }
 
-    public LocalDate getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 

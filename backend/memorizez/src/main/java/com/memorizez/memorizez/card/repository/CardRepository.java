@@ -26,7 +26,7 @@ public interface CardRepository extends JpaRepository<Card, String> {
             Collection collection
     );
 
-    List<Card> findAllByCollectionOrderByCreatedAtAsc(Collection collection);
+    List<Card> findAllByCollectionOrderByCreatedAtAscIdAsc(Collection collection);
 
     long countByCollection(Collection collection);
 

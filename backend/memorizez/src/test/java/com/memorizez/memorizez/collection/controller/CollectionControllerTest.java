@@ -6,6 +6,7 @@ import com.memorizez.memorizez.collection.dto.UpdateCollectionRequest;
 import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.service.CollectionService;
 import com.memorizez.memorizez.exception.GlobalExceptionHandler;
+import com.memorizez.memorizez.time.AppTime;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -107,10 +108,10 @@ public class CollectionControllerTest {
         Authentication authentication = mock(Authentication.class);
 
         CollectionResponse collection1 =
-                new CollectionResponse("1", "Inglês", LocalDate.now(), 0,0);
+                new CollectionResponse("1", "Inglês", AppTime.now(), 0,0);
 
         CollectionResponse collection2 =
-                new CollectionResponse("2", "Java", LocalDate.now(), 0,0);
+                new CollectionResponse("2", "Java", AppTime.now(), 0,0);
 
         when(collectionService.findAll(authentication))
                 .thenReturn(List.of(collection1, collection2));
