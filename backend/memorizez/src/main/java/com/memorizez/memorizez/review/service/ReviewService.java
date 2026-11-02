@@ -17,6 +17,7 @@ import com.memorizez.memorizez.review.dto.*;
 import com.memorizez.memorizez.review.exception.CardNotAvailableForReviewException;
 import com.memorizez.memorizez.review.exception.CardNotRevealedException;
 import com.memorizez.memorizez.review.repository.ReviewRepository;
+import com.memorizez.memorizez.time.AppTime;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
@@ -26,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -128,7 +128,7 @@ public class ReviewService {
                 .findByCard(card)
                 .orElse(null);
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppTime.today();
 
         if (review != null
                 && review.getStage() != null
@@ -146,7 +146,7 @@ public class ReviewService {
             review.setCard(card);
         }
 
-        review.setRevealedAt(LocalDateTime.now());
+        review.setRevealedAt(AppTime.now());
 
         reviewRepository.save(review);
 
@@ -247,7 +247,7 @@ public class ReviewService {
                         null,
                         card,
                         action,
-                        LocalDateTime.now()
+                        AppTime.now()
                 )
         );
 
@@ -382,7 +382,7 @@ public class ReviewService {
                 .orElseThrow(() ->
                         new UserNotFoundException("User not found"));
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppTime.today();
 
         return collectionRepository
                 .findAllByUserOrderByCreatedAtDesc(user)

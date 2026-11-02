@@ -1,6 +1,7 @@
 package com.memorizez.memorizez.collection;
 
 import com.memorizez.memorizez.card.Card;
+import com.memorizez.memorizez.time.AppTime;
 import com.memorizez.memorizez.user.User;
 import jakarta.persistence.*;
 
@@ -40,7 +41,7 @@ public class Collection {
         }
 
         if (createdAt == null) {
-            createdAt = LocalDate.now();
+            createdAt = AppTime.today();
         }
     }
 

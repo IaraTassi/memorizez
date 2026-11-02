@@ -7,6 +7,7 @@ import com.memorizez.memorizez.collection.dto.CreateCollectionRequest;
 import com.memorizez.memorizez.collection.dto.UpdateCollectionRequest;
 import com.memorizez.memorizez.collection.exception.CollectionNotFoundException;
 import com.memorizez.memorizez.collection.repository.CollectionRepository;
+import com.memorizez.memorizez.time.AppTime;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
@@ -53,7 +54,7 @@ public class CollectionService {
 
         User user = userRepository.findByEmail(authentication.getName()).orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppTime.today();
 
         return collectionRepository
                 .findAllByUserOrderByCreatedAtDesc(user)

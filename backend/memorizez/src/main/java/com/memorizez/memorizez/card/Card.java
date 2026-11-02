@@ -3,6 +3,7 @@ package com.memorizez.memorizez.card;
 import com.memorizez.memorizez.collection.Collection;
 import com.memorizez.memorizez.history.History;
 import com.memorizez.memorizez.review.Review;
+import com.memorizez.memorizez.time.AppTime;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -64,7 +65,7 @@ public class Card {
         }
 
         if (createdAt == null) {
-            createdAt = LocalDate.now();
+            createdAt = AppTime.today();
         }
     }
 

@@ -15,6 +15,7 @@ import com.memorizez.memorizez.history.repository.HistoryRepository;
 import com.memorizez.memorizez.review.Review;
 import com.memorizez.memorizez.review.ReviewStage;
 import com.memorizez.memorizez.review.repository.ReviewRepository;
+import com.memorizez.memorizez.time.AppTime;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
@@ -25,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Service
@@ -74,18 +74,12 @@ public class CardService {
 
         cardRepository.save(card);
 
-        System.out.println("===== DIAGNÓSTICO DE TIMEZONE =====");
-        System.out.println("Timezone JVM: " + java.time.ZoneId.systemDefault());
-        System.out.println("Horário Local JVM: " + LocalDateTime.now());
-        System.out.println("Horário UTC: " + java.time.Instant.now());
-        System.out.println("===================================");
-
         historyRepository.save(
                 new History(
                         null,
                         card,
                         HistoryAction.CREATED,
-                        LocalDateTime.now()
+                        AppTime.now()
                 )
         );
     }
@@ -162,7 +156,7 @@ public class CardService {
                 null,
                 card,
                 HistoryAction.EDITED,
-                LocalDateTime.now()
+                AppTime.now()
         );
 
         historyRepository.save(history);
