@@ -142,7 +142,19 @@ registerForm.addEventListener("submit", async (event) => {
   const password = document.querySelector("#registerPassword");
   const confirmPassword = document.querySelector("#confirmPassword");
 
-  const nameValid = validateRequired(name, "Informe seu nome.");
+  function validateName(input) {
+    if (!validateRequired(input, "Informe seu nome.")) {
+      return false;
+    }
+
+    if (input.value.trim().length > 100) {
+      showFieldError(input, "O nome deve ter no máximo 100 caracteres.");
+      return false;
+    }
+
+    clearFieldError(input);
+    return true;
+  }
 
   const emailValid = validateEmail(email);
 
@@ -164,6 +176,8 @@ registerForm.addEventListener("submit", async (event) => {
   } else if (confirmPasswordValid) {
     clearFieldError(confirmPassword);
   }
+
+  const nameValid = validateName(name);
 
   if (nameValid && emailValid && passwordValid && confirmPasswordValid) {
     const submitButton = registerForm.querySelector('button[type="submit"]');
