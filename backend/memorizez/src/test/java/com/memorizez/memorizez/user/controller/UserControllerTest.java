@@ -83,6 +83,54 @@ public class UserControllerTest {
     }
 
     @Test
+    void shouldRegisterSuccessfullyWhenNameHas100Characters() throws Exception {
+
+        RegisterUserRequest request = new RegisterUserRequest();
+        request.setName("a".repeat(100));
+        request.setEmail("test@memorizez.com");
+        request.setPassword("12345678");
+        request.setConfirmPassword("12345678");
+
+        mockMvc.perform(
+                        post("/users")
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andExpect(status().isCreated());
+
+        verify(userService)
+                .register(any(RegisterUserRequest.class));
+
+        verifyNoInteractions(
+                authenticationManager,
+                securityContextRepository
+        );
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenNameHasMoreThan100Characters() throws Exception {
+
+        RegisterUserRequest request = new RegisterUserRequest();
+        request.setName("a".repeat(101));
+        request.setEmail("test@memorizez.com");
+        request.setPassword("12345678");
+        request.setConfirmPassword("12345678");
+
+        mockMvc.perform(
+                        post("/users")
+                                .contentType("application/json")
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(
+                userService,
+                authenticationManager,
+                securityContextRepository
+        );
+    }
+
+    @Test
     void shouldLoginSuccessfully() throws Exception {
         LoginRequest request = new LoginRequest();
         request.setEmail("test@memorizez.com");

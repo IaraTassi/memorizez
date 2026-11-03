@@ -129,6 +129,51 @@ describe('Authentication', () => {
 
         });
 
+        it('should register a user with a name of exactly 100 characters', () => {
+            const user = {
+                name: 'A'.repeat(100),
+                email: `e2e-name-100-${Date.now()}@memorizez.com`,
+                password: 'password123',
+                confirmPassword: 'password123'
+            };
+
+            cy.request('GET', '/csrf').then((csrfResponse) => {
+                return cy.request({
+                    method: 'POST',
+                    url: '/users',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfResponse.body.token
+                    },
+                    body: user
+                });
+            }).then((response) => {
+                expect(response.status).to.equal(201);
+            });
+        });
+
+        it('should not register a user with a name longer than 100 characters', () => {
+            const user = {
+                name: 'A'.repeat(101),
+                email: `e2e-name-101-${Date.now()}@memorizez.com`,
+                password: 'password123',
+                confirmPassword: 'password123'
+            };
+
+            cy.request('GET', '/csrf').then((csrfResponse) => {
+                return cy.request({
+                    method: 'POST',
+                    url: '/users',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfResponse.body.token
+                    },
+                    body: user,
+                    failOnStatusCode: false
+                });
+            }).then((response) => {
+                expect(response.status).to.equal(400);
+            });
+        });
+
     });
 
     describe('login', () => {
