@@ -30,15 +30,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     return icon;
   }
 
-  function formatCollectionDate(date) {
-    const [year, month, day] = date.split("-").map(Number);
+  function formatCollectionDate(dateString, includeTime = false) {
+    if (!dateString) {
+      return null;
+    }
 
-    return new Intl.DateTimeFormat("pt-BR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      timeZone: "UTC",
-    }).format(new Date(Date.UTC(year, month - 1, day)));
+    const [datePart, timePart] = dateString.split("T");
+    const [year, month, day] = datePart.split("-");
+
+    const formattedDate = `${day}/${month}/${year}`;
+
+    if (!includeTime || !timePart) {
+      return formattedDate;
+    }
+
+    const [hours, minutes] = timePart.split(":");
+
+    return `${formattedDate} às ${hours}:${minutes}`;
   }
 
   function createCollectionCard(collection) {

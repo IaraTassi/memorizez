@@ -96,11 +96,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function formatDate(dateString) {
-    if (!dateString) return "Data indisponível";
+  function formatDate(dateString, includeTime = false) {
+    if (!dateString) {
+      return null;
+    }
 
-    const [year, month, day] = dateString.split("-");
-    return `${day}/${month}/${year}`;
+    const [datePart, timePart] = dateString.split("T");
+    const [year, month, day] = datePart.split("-");
+
+    const formattedDate = `${day}/${month}/${year}`;
+
+    if (!includeTime || !timePart) {
+      return formattedDate;
+    }
+
+    const [hours, minutes] = timePart.split(":");
+
+    return `${formattedDate} às ${hours}:${minutes}`;
   }
 
   function createCollectionCard(collection) {
@@ -268,9 +280,6 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const collections = await apiRequest("/collections");
 
-      collections.sort((a, b) => {
-        return b.createdAt.localeCompare(a.createdAt);
-      });
       renderCollections(collections);
     } catch (error) {
       if (error.status === 401) {

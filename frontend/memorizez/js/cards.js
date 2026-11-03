@@ -83,14 +83,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     cardsList.replaceChildren(paragraph);
   }
 
-  function formatDate(date) {
-    if (!date) return "Data indisponível";
+  function formatDate(dateString, includeTime = false) {
+    if (!dateString) {
+      return null;
+    }
 
-    const [year, month, day] = date.split("-");
+    const [datePart, timePart] = dateString.split("T");
+    const [year, month, day] = datePart.split("-");
 
-    if (!year || !month || !day) return "Data indisponível";
+    const formattedDate = `${day}/${month}/${year}`;
 
-    return `${day}/${month}/${year}`;
+    if (!includeTime || !timePart) {
+      return formattedDate;
+    }
+
+    const [hours, minutes] = timePart.split(":");
+
+    return `${formattedDate} às ${hours}:${minutes}`;
   }
 
   async function loadCollection() {
