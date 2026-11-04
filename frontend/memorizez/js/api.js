@@ -49,3 +49,10 @@ async function apiRequest(path, options = {}) {
 
   return null;
 }
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    getCsrfToken,
+    apiRequest,
+  };
+}
