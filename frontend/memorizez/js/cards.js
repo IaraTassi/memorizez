@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const saveCardButton = document.querySelector("#save-card");
 
   const deleteCardOverlay = document.querySelector("#delete-card-overlay");
+  const closeDeleteCardButton = document.querySelector("#close-delete-card");
   const cancelDeleteCardButton = document.querySelector("#cancel-delete-card");
   const confirmDeleteCardButton = document.querySelector(
     "#confirm-delete-card",
@@ -270,6 +271,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     createCardButton?.focus();
   }
 
+  closeDeleteCardButton?.addEventListener("click", closeDeleteCardModal);
   cancelDeleteCardButton?.addEventListener("click", closeDeleteCardModal);
 
   deleteCardOverlay?.addEventListener("click", (event) => {

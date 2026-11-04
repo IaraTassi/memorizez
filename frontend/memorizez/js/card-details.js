@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const saveCardButton = document.querySelector("#save-card");
 
   const deleteCardOverlay = document.querySelector("#delete-card-overlay");
+  const closeDeleteCardButton = document.querySelector("#close-delete-card");
   const cancelDeleteCardButton = document.querySelector("#cancel-delete-card");
   const confirmDeleteCardButton = document.querySelector(
     "#confirm-delete-card",
@@ -237,6 +238,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   deleteCardButton?.addEventListener("click", openDeleteModal);
   cancelDeleteCardButton?.addEventListener("click", closeDeleteModal);
+  closeDeleteCardButton?.addEventListener("click", closeDeleteModal);
 
   deleteCardOverlay.addEventListener("click", (event) => {
     if (event.target === deleteCardOverlay) {

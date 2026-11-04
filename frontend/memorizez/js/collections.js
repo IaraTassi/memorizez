@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const deleteModalOverlay = document.getElementById(
     "delete-collection-modal-overlay",
   );
+  const closeDeleteButton = document.getElementById("close-delete-collection");
   const cancelDeleteButton = document.getElementById(
     "cancel-delete-collection",
   );
@@ -301,6 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
   openFormButton.addEventListener("click", () => openModal());
   closeFormButton.addEventListener("click", closeModal);
   cancelFormButton.addEventListener("click", closeModal);
+  closeDeleteButton.addEventListener("click", closeDeleteModal);
   cancelDeleteButton.addEventListener("click", closeDeleteModal);
 
   deleteModalOverlay.addEventListener("click", (event) => {
@@ -331,7 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      closeDeleteModal();
       showFeedback(
         error.status === 404
           ? "Esta coleção não foi encontrada. Atualize a página e tente novamente."
@@ -368,6 +369,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!name) {
       showFeedback("Informe um nome para a coleção.", "error");
+      nameInput.focus();
+      return;
+    }
+
+    if (name.length > 100) {
+      showFeedback(
+        "O nome da coleção deve ter no máximo 100 caracteres.",
+        "error",
+      );
       nameInput.focus();
       return;
     }
