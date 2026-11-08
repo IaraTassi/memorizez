@@ -11,8 +11,27 @@ const flipButtons = document.querySelectorAll("[data-auth-flip]");
 const registerForm = document.querySelector("#registerForm");
 const loginForm = document.querySelector("#loginForm");
 
-function showAuthFace(face) {
+let isRegistering = false;
+let isLoggingIn = false;
+let isTransitioningAfterRegister = false;
+
+function clearStoredProfileName() {
+  try {
+    sessionStorage.removeItem("memorizez.profileName");
+  } catch (error) {
+    console.warn(
+      "[MEMORIZEZ] Não foi possível limpar o nome do perfil.",
+      error,
+    );
+  }
+}
+
+function showAuthFace(face, shouldFocus = true) {
   const showLogin = face === "login";
+
+  if (!authCard || !registerFace || !loginFace) {
+    return;
+  }
 
   authCard.classList.toggle("is-login", showLogin);
 
@@ -22,27 +41,43 @@ function showAuthFace(face) {
   registerFace.inert = showLogin;
   loginFace.inert = !showLogin;
 
-  const activeTitle = showLogin ? loginTitle : registerTitle;
-  activeTitle.focus();
+  if (shouldFocus) {
+    const activeTitle = showLogin ? loginTitle : registerTitle;
+    activeTitle?.focus();
+  }
 }
 
 const params = new URLSearchParams(window.location.search);
 const initialMode = params.get("mode");
 
-if (initialMode === "login") {
-  showAuthFace("login");
-} else if (initialMode === "register") {
-  showAuthFace("register");
+if (initialMode === "login" || initialMode === "register") {
+  showAuthFace(initialMode);
 }
 
 flipButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    showAuthFace(button.dataset.authFlip);
+    if (isRegistering || isLoggingIn || isTransitioningAfterRegister) {
+      return;
+    }
+
+    const destination = button.dataset.authFlip;
+
+    if (destination === "login" || destination === "register") {
+      showAuthFace(destination);
+    }
   });
 });
 
 function showFieldError(input, message) {
+  if (!input) {
+    return;
+  }
+
   const errorElement = document.querySelector(`#${input.id}Error`);
+
+  if (!errorElement) {
+    return;
+  }
 
   input.setAttribute("aria-invalid", "true");
   errorElement.textContent = message;
@@ -50,15 +85,30 @@ function showFieldError(input, message) {
 }
 
 function clearFieldError(input) {
+  if (!input) {
+    return;
+  }
+
   const errorElement = document.querySelector(`#${input.id}Error`);
 
   input.removeAttribute("aria-invalid");
-  errorElement.textContent = "";
-  errorElement.hidden = true;
+
+  if (errorElement) {
+    errorElement.textContent = "";
+    errorElement.hidden = true;
+  }
 }
 
 function showFormError(form, message) {
+  if (!form) {
+    return;
+  }
+
   const errorElement = form.querySelector('[role="alert"]');
+
+  if (!errorElement) {
+    return;
+  }
 
   errorElement.classList.remove("auth-error--success");
   errorElement.textContent = message;
@@ -66,7 +116,15 @@ function showFormError(form, message) {
 }
 
 function clearFormError(form) {
+  if (!form) {
+    return;
+  }
+
   const errorElement = form.querySelector('[role="alert"]');
+
+  if (!errorElement) {
+    return;
+  }
 
   errorElement.classList.remove("auth-error--success");
   errorElement.textContent = "";
@@ -74,16 +132,46 @@ function clearFormError(form) {
 }
 
 function showFormSuccess(form, message) {
+  if (!form) {
+    return;
+  }
+
   const errorElement = form.querySelector('[role="alert"]');
+
+  if (!errorElement) {
+    return;
+  }
 
   errorElement.textContent = message;
   errorElement.classList.add("auth-error--success");
   errorElement.hidden = false;
 }
 
+function focusFirstInvalid(form) {
+  form?.querySelector('[aria-invalid="true"]')?.focus();
+}
+
 function validateRequired(input, message) {
+  if (!input) {
+    return false;
+  }
+
   if (!input.value.trim()) {
     showFieldError(input, message);
+    return false;
+  }
+
+  clearFieldError(input);
+  return true;
+}
+
+function validateName(input) {
+  if (!validateRequired(input, "Informe seu nome.")) {
+    return false;
+  }
+
+  if (input.value.trim().length > 100) {
+    showFieldError(input, "O nome deve ter no máximo 100 caracteres.");
     return false;
   }
 
@@ -96,11 +184,6 @@ function validateEmail(input) {
     return false;
   }
 
-  if (input.value.trim().length < 8) {
-    showFieldError(input, "O e-mail deve ter pelo menos 8 caracteres.");
-    return false;
-  }
-
   if (!input.validity.valid) {
     showFieldError(input, "Informe um endereço de e-mail válido.");
     return false;
@@ -110,79 +193,239 @@ function validateEmail(input) {
   return true;
 }
 
-function focusFirstInvalid(form) {
-  const firstInvalid = form.querySelector('[aria-invalid="true"]');
-
-  if (firstInvalid) {
-    firstInvalid.focus();
+function validatePassword(input) {
+  if (!validateRequired(input, "Informe sua senha.")) {
+    return false;
   }
+
+  if (input.value.length < 6) {
+    showFieldError(input, "A senha deve ter pelo menos 6 caracteres.");
+    return false;
+  }
+
+  clearFieldError(input);
+  return true;
 }
 
-function clearErrorWhileTyping(input) {
-  input.addEventListener("input", () => {
-    if (input.getAttribute("aria-invalid") === "true") {
-      clearFieldError(input);
-    }
-  });
+function validatePasswordConfirmation(password, confirmation) {
+  if (!validateRequired(confirmation, "Confirme sua senha.")) {
+    return false;
+  }
+
+  if (!password || password.value !== confirmation.value) {
+    showFieldError(confirmation, "As senhas não coincidem.");
+    return false;
+  }
+
+  clearFieldError(confirmation);
+  return true;
 }
 
 const fields = document.querySelectorAll(
   "#registerForm input, #loginForm input",
 );
 
-fields.forEach(clearErrorWhileTyping);
-
-registerForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  clearFormError(registerForm);
-
-  const name = document.querySelector("#registerName");
-  const email = document.querySelector("#registerEmail");
-  const password = document.querySelector("#registerPassword");
-  const confirmPassword = document.querySelector("#confirmPassword");
-
-  function validateName(input) {
-    if (!validateRequired(input, "Informe seu nome.")) {
-      return false;
+fields.forEach((input) => {
+  input.addEventListener("input", () => {
+    if (input.getAttribute("aria-invalid") === "true") {
+      clearFieldError(input);
     }
+  });
+});
 
-    if (input.value.trim().length > 100) {
-      showFieldError(input, "O nome deve ter no máximo 100 caracteres.");
-      return false;
-    }
-
-    clearFieldError(input);
-    return true;
+function setSubmitting(form, submitting, loadingText) {
+  if (!form) {
+    return;
   }
 
-  const emailValid = validateEmail(email);
+  const button = form.querySelector('button[type="submit"]');
 
-  let passwordValid = validateRequired(password, "Informe sua senha.");
+  if (!button) {
+    return;
+  }
 
-  let confirmPasswordValid = validateRequired(
-    confirmPassword,
-    "Confirme sua senha.",
+  if (submitting) {
+    if (button.dataset.originalHtml === undefined) {
+      button.dataset.originalHtml = button.innerHTML;
+      button.dataset.originalDisabled = String(button.disabled);
+    }
+
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    button.textContent = loadingText;
+    return;
+  }
+
+  if (button.dataset.originalHtml !== undefined) {
+    button.innerHTML = button.dataset.originalHtml;
+  }
+
+  button.disabled = button.dataset.originalDisabled === "true";
+  button.removeAttribute("aria-busy");
+
+  delete button.dataset.originalHtml;
+  delete button.dataset.originalDisabled;
+}
+
+function getBackendMessage(error) {
+  const message = error?.data?.userMessage;
+
+  return typeof message === "string" && message.trim() ? message.trim() : null;
+}
+
+function getRequestInfrastructureErrorMessage(error, operation) {
+  switch (error?.code) {
+    case "CSRF_CONNECTION_ERROR":
+      return "Não foi possível validar a segurança da solicitação. Verifique sua conexão e tente novamente.";
+
+    case "INVALID_CSRF_TOKEN":
+      return "Não foi possível validar a segurança da solicitação. Atualize a página e tente novamente.";
+
+    case "CSRF_ERROR":
+      return (
+        getBackendMessage(error) ||
+        "Não foi possível validar a segurança da solicitação. Atualize a página e tente novamente."
+      );
+
+    case "RESPONSE_READ_ERROR":
+      return `Não foi possível confirmar o ${operation}. Atualize a página antes de tentar novamente.`;
+
+    case "NETWORK_ERROR":
+      return "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.";
+
+    default:
+      return null;
+  }
+}
+
+function getRegisterErrorMessage(error) {
+  const infrastructureMessage = getRequestInfrastructureErrorMessage(
+    error,
+    "cadastro",
   );
 
-  if (passwordValid && password.value.length < 6) {
-    showFieldError(password, "A senha deve ter pelo menos 6 caracteres.");
-    passwordValid = false;
+  if (infrastructureMessage) {
+    return infrastructureMessage;
   }
 
-  if (confirmPasswordValid && password.value !== confirmPassword.value) {
-    showFieldError(confirmPassword, "As senhas não coincidem.");
-    confirmPasswordValid = false;
-  } else if (confirmPasswordValid) {
-    clearFieldError(confirmPassword);
+  const backendMessage = getBackendMessage(error);
+
+  switch (error?.status) {
+    case 400:
+    case 422:
+      return (
+        backendMessage ||
+        "Os dados enviados são inválidos. Verifique as informações e tente novamente."
+      );
+
+    case 409:
+      return (
+        backendMessage || "Já existe uma conta cadastrada com esses dados."
+      );
+
+    case 401:
+      return "Não foi possível autenticar a solicitação. Atualize a página e tente novamente.";
+
+    case 403:
+      return (
+        backendMessage ||
+        "A solicitação não foi autorizada. Atualize a página e tente novamente."
+      );
+
+    case 429:
+      return "Muitas tentativas foram realizadas. Aguarde um pouco e tente novamente.";
+
+    case 500:
+    case 502:
+    case 503:
+    case 504:
+      return (
+        backendMessage ||
+        "O servidor está temporariamente indisponível. Tente novamente mais tarde."
+      );
+
+    default:
+      return "Não foi possível criar sua conta agora. Tente novamente.";
+  }
+}
+
+function getLoginErrorMessage(error) {
+  const infrastructureMessage = getRequestInfrastructureErrorMessage(
+    error,
+    "login",
+  );
+
+  if (infrastructureMessage) {
+    return infrastructureMessage;
   }
 
-  const nameValid = validateName(name);
+  const backendMessage = getBackendMessage(error);
 
-  if (nameValid && emailValid && passwordValid && confirmPasswordValid) {
-    const submitButton = registerForm.querySelector('button[type="submit"]');
+  switch (error?.status) {
+    case 400:
+    case 401:
+      return "E-mail ou senha inválidos.";
 
-    submitButton.disabled = true;
+    case 403:
+      return (
+        backendMessage ||
+        "A solicitação não foi autorizada. Atualize a página e tente novamente."
+      );
+
+    case 404:
+      return "O serviço de autenticação não está disponível.";
+
+    case 422:
+      return backendMessage || "Os dados informados são inválidos.";
+
+    case 429:
+      return "Muitas tentativas de acesso. Aguarde um pouco antes de tentar novamente.";
+
+    case 500:
+    case 502:
+    case 503:
+    case 504:
+      return (
+        backendMessage ||
+        "O servidor está temporariamente indisponível. Tente novamente mais tarde."
+      );
+
+    default:
+      return "Não foi possível entrar agora. Tente novamente.";
+  }
+}
+
+if (registerForm) {
+  registerForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (isRegistering || isTransitioningAfterRegister) {
+      return;
+    }
+
+    clearFormError(registerForm);
+
+    const name = document.querySelector("#registerName");
+    const email = document.querySelector("#registerEmail");
+    const password = document.querySelector("#registerPassword");
+    const confirmPassword = document.querySelector("#confirmPassword");
+
+    const nameValid = validateName(name);
+    const emailValid = validateEmail(email);
+    const passwordValid = validatePassword(password);
+
+    const confirmPasswordValid = validatePasswordConfirmation(
+      password,
+      confirmPassword,
+    );
+
+    if (!nameValid || !emailValid || !passwordValid || !confirmPasswordValid) {
+      focusFirstInvalid(registerForm);
+      return;
+    }
+
+    isRegistering = true;
+    setSubmitting(registerForm, true, "Criando conta...");
 
     try {
       await apiRequest("/users", {
@@ -198,81 +441,89 @@ registerForm.addEventListener("submit", async (event) => {
         }),
       });
 
+      isTransitioningAfterRegister = true;
+
       showFormSuccess(registerForm, "Conta criada com sucesso!");
+
       registerForm.reset();
 
-      setTimeout(() => {
+      [name, email, password, confirmPassword].forEach(clearFieldError);
+
+      showAuthFace("register", false);
+
+      window.setTimeout(() => {
         clearFormError(registerForm);
+        isTransitioningAfterRegister = false;
         showAuthFace("login");
       }, 1500);
     } catch (error) {
-      if (error.status === 400 || error.status === 409) {
-        showFormError(
-          registerForm,
-          "Não foi possível criar a conta. Verifique os dados ou tente outro e-mail.",
-        );
-      } else {
-        showFormError(
-          registerForm,
-          "Não foi possível criar sua conta agora. Tente novamente.",
-        );
-      }
+      console.error("[MEMORIZEZ] Erro no cadastro:", {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
+
+      showFormError(registerForm, getRegisterErrorMessage(error));
     } finally {
-      submitButton.disabled = false;
+      isRegistering = false;
+      setSubmitting(registerForm, false);
+    }
+  });
+}
+
+if (loginForm) {
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (isLoggingIn) {
+      return;
     }
 
-    return;
-  }
+    clearFormError(loginForm);
 
-  focusFirstInvalid(registerForm);
-});
+    const email = document.querySelector("#loginEmail");
+    const password = document.querySelector("#loginPassword");
 
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
+    const emailValid = validateEmail(email);
+    const passwordValid = validateRequired(password, "Informe sua senha.");
 
-  clearFormError(loginForm);
-
-  const email = document.querySelector("#loginEmail");
-  const password = document.querySelector("#loginPassword");
-
-  const emailValid = validateRequired(email, "Informe seu e-mail.");
-
-  const passwordValid = validateRequired(password, "Informe sua senha.");
-
-  if (!emailValid || !passwordValid) {
-    focusFirstInvalid(loginForm);
-    return;
-  }
-
-  const submitButton = loginForm.querySelector('button[type="submit"]');
-
-  submitButton.disabled = true;
-
-  try {
-    await apiRequest("/users/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: email.value.trim(),
-        password: password.value,
-      }),
-    });
-
-    showFormSuccess(loginForm, "Login realizado com sucesso!");
-
-    window.location.href = "collections.html";
-  } catch (error) {
-    if (error.status === 401 || error.status === 400) {
-      showFormError(loginForm, "E-mail ou senha inválidos.");
-    } else {
-      showFormError(
-        loginForm,
-        "Não foi possível entrar agora. Tente novamente.",
-      );
+    if (!emailValid || !passwordValid) {
+      focusFirstInvalid(loginForm);
+      return;
     }
-  } finally {
-    submitButton.disabled = false;
-  }
-});
+
+    isLoggingIn = true;
+    setSubmitting(loginForm, true, "Entrando...");
+
+    try {
+      await apiRequest("/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.value.trim(),
+          password: password.value,
+        }),
+      });
+
+      clearStoredProfileName();
+
+      showFormSuccess(loginForm, "Login realizado com sucesso!");
+
+      window.location.assign("collections.html");
+    } catch (error) {
+      console.error("[MEMORIZEZ] Erro no login:", {
+        message: error?.message ?? null,
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
+
+      showFormError(loginForm, getLoginErrorMessage(error));
+    } finally {
+      isLoggingIn = false;
+      setSubmitting(loginForm, false);
+    }
+  });
+}

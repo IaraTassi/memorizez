@@ -1,6 +1,35 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  const PROFILE_NAME_STORAGE_KEY = "memorizez.profileName";
+
+  function getStoredProfileName() {
+    try {
+      const name = sessionStorage.getItem(PROFILE_NAME_STORAGE_KEY);
+      return name?.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveProfileName(name) {
+    try {
+      sessionStorage.setItem(PROFILE_NAME_STORAGE_KEY, name);
+    } catch (error) {
+      console.warn("[MEMORIZEZ] Não foi possível armazenar o nome do perfil.");
+    }
+  }
+
+  function clearStoredProfileName() {
+    try {
+      sessionStorage.removeItem(PROFILE_NAME_STORAGE_KEY);
+    } catch (error) {
+      console.warn("[MEMORIZEZ] Não foi possível limpar o nome do perfil.");
+    }
+  }
+
   function renderPrivateHeader() {
-    if (document.querySelector("#private-header")) return;
+    if (document.querySelector("#private-header")) {
+      return;
+    }
 
     const currentPage = document.body.dataset.page;
 
@@ -12,15 +41,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     ];
 
     const linksHTML = navigationLinks
-      .map((link) => {
-        const isCurrentPage = link.page === currentPage;
+      .map(({ page, href, label }) => {
+        const isCurrentPage = page === currentPage;
 
         return `
           <a
-            href="${link.href}"
+            href="${href}"
             ${isCurrentPage ? 'aria-current="page"' : ""}
           >
-            ${link.label}
+            ${label}
           </a>
         `;
       })
@@ -100,77 +129,107 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function renderPrivateFooter() {
-    if (document.querySelector("#private-footer")) return;
+    if (document.querySelector("#private-footer")) {
+      return;
+    }
 
     const footerHTML = `
-    <footer id="private-footer">
-      <div class="footer-inner">
-        <a
-          class="footer-brand"
-          href="collections.html"
-          aria-label="MEMORIZEZ, Minhas coleções"
-        >
-          <img src="assets/logo.svg" alt="" class="hero-logo" />
-        </a>
+      <footer id="private-footer">
+        <div class="footer-inner">
+          <a
+            class="footer-brand"
+            href="collections.html"
+            aria-label="MEMORIZEZ, Minhas coleções"
+          >
+            <img src="assets/logo.svg" alt="" class="hero-logo" />
+          </a>
 
-        <span>© 2026 Todos os direitos reservados.</span>
-      </div>
-    </footer>
-  `;
+          <span>
+            © ${new Date().getFullYear()} Todos os direitos reservados.
+          </span>
+        </div>
+      </footer>
+    `;
 
     document.body.insertAdjacentHTML("beforeend", footerHTML);
   }
 
   function renderAccountModal() {
-    if (document.querySelector("#account-confirmation-overlay")) return;
+    if (document.querySelector("#account-confirmation-overlay")) {
+      return;
+    }
 
     const modalHTML = `
-    <div class="modal-overlay" id="account-confirmation-overlay" hidden>
-      <section
-        class="confirmation-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirmation-title"
-        aria-describedby="confirmation-message"
-        tabindex="-1"
+      <div
+        class="modal-overlay"
+        id="account-confirmation-overlay"
+        hidden
       >
-        <button class="modal-close" type="button" aria-label="Fechar janela">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
+        <section
+          class="confirmation-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirmation-title"
+          aria-describedby="confirmation-message confirmation-feedback"
+          tabindex="-1"
+        >
+          <button
+            class="modal-close"
+            type="button"
+            aria-label="Fechar janela"
           >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        </button>
-
-        <h2 class="modal-title" id="confirmation-title">Deseja sair?</h2>
-
-        <p class="modal-message" id="confirmation-message">
-          Sua sessão será encerrada. Você precisará entrar novamente para
-          acessar suas coleções e seus estudos.
-        </p>
-
-        <div class="modal-actions">
-          <button class="btn button-secondary modal-cancel" type="button">
-            Cancelar
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
           </button>
 
-          <button class="btn button-primary modal-confirm" type="button">
-            Sair
-          </button>
-        </div>
-      </section>
-    </div>
-  `;
+          <h2 class="modal-title" id="confirmation-title">
+            Deseja sair?
+          </h2>
+
+          <p class="modal-message" id="confirmation-message">
+            Sua sessão será encerrada. Você precisará entrar novamente para
+            acessar suas coleções e seus estudos.
+          </p>
+
+          <p
+            class="modal-message"
+            id="confirmation-feedback"
+            role="alert"
+            aria-live="assertive"
+            hidden
+          ></p>
+
+          <div class="modal-actions">
+            <button
+              class="btn button-secondary modal-cancel"
+              type="button"
+            >
+              Cancelar
+            </button>
+
+            <button
+              class="btn button-primary modal-confirm"
+              type="button"
+            >
+              Sair
+            </button>
+          </div>
+        </section>
+      </div>
+    `;
 
     document.body.insertAdjacentHTML("beforeend", modalHTML);
   }
@@ -179,32 +238,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderPrivateFooter();
   renderAccountModal();
 
-  const profileName = document.querySelector(".profile-name");
-
-  if (profileName) {
-    try {
-      const user = await apiRequest("/users/me");
-      profileName.textContent = user.name;
-    } catch (error) {
-      console.error("Não foi possível carregar os dados do usuário:", error);
-
-      if (error.status === 401) {
-        window.location.replace("index.html");
-        return;
-      }
-    }
-  }
-
   const modalOverlay = document.querySelector("#account-confirmation-overlay");
 
-  if (!modalOverlay) return;
+  if (!modalOverlay) {
+    console.error("[MEMORIZEZ] Não foi possível inicializar o modal de conta.");
+    return;
+  }
 
   const modal = modalOverlay.querySelector(".confirmation-modal");
   const closeButton = modalOverlay.querySelector(".modal-close");
   const cancelButton = modalOverlay.querySelector(".modal-cancel");
   const confirmButton = modalOverlay.querySelector(".modal-confirm");
   const modalTitle = modalOverlay.querySelector(".modal-title");
-  const modalMessage = modalOverlay.querySelector(".modal-message");
+  const modalMessage = modalOverlay.querySelector("#confirmation-message");
+  const modalFeedback = modalOverlay.querySelector("#confirmation-feedback");
 
   if (
     !modal ||
@@ -212,76 +259,236 @@ document.addEventListener("DOMContentLoaded", async () => {
     !cancelButton ||
     !confirmButton ||
     !modalTitle ||
-    !modalMessage
+    !modalMessage ||
+    !modalFeedback
   ) {
+    console.error(
+      "[MEMORIZEZ] Não foi possível inicializar os controles do modal.",
+    );
     return;
   }
 
   let previousFocus = null;
   let currentAction = null;
+  let isSubmitting = false;
+
+  function clearModalFeedback() {
+    modalFeedback.textContent = "";
+    modalFeedback.hidden = true;
+  }
+
+  function showModalFeedback(message) {
+    modalFeedback.textContent = message;
+    modalFeedback.hidden = false;
+  }
+
+  function getApiErrorMessage(error, fallbackMessage) {
+    const userMessage = error?.data?.userMessage;
+
+    return typeof userMessage === "string" && userMessage.trim()
+      ? userMessage.trim()
+      : fallbackMessage;
+  }
+
+  function setModalControlsForSessionExpired() {
+    closeButton.hidden = true;
+    cancelButton.hidden = true;
+
+    confirmButton.hidden = false;
+    confirmButton.textContent = "Ir para login";
+  }
+
+  function setModalControlsForConfirmation() {
+    closeButton.hidden = false;
+    cancelButton.hidden = false;
+
+    confirmButton.hidden = false;
+  }
 
   function openModal(type) {
-    if (!["logout", "delete-account"].includes(type)) return;
+    if (!["logout", "delete-account"].includes(type)) {
+      return;
+    }
+
+    if (isSubmitting || currentAction === "session-expired") {
+      return;
+    }
 
     previousFocus = document.activeElement;
     currentAction = type;
 
+    clearModalFeedback();
+    setModalControlsForConfirmation();
+
     if (type === "logout") {
       modalTitle.textContent = "Deseja sair?";
+
       modalMessage.textContent =
         "Sua sessão será encerrada. Você precisará entrar novamente para acessar suas coleções e seus estudos.";
+
       confirmButton.textContent = "Sair";
     }
 
     if (type === "delete-account") {
       modalTitle.textContent = "Excluir sua conta?";
+
       modalMessage.textContent =
         "Essa ação é permanente. Sua conta, suas coleções, seus cartões, suas revisões e seu histórico serão excluídos. Não será possível recuperar esses dados.";
+
       confirmButton.textContent = "Excluir conta";
     }
 
     modalOverlay.hidden = false;
-    modal.focus();
+    cancelButton.focus();
+  }
+
+  function openSessionExpiredModal() {
+    if (currentAction === "session-expired") {
+      return;
+    }
+
+    previousFocus = document.activeElement;
+    currentAction = "session-expired";
+
+    clearModalFeedback();
+
+    modalTitle.textContent = "Sua sessão expirou";
+
+    modalMessage.textContent =
+      "Por segurança, sua sessão não está mais ativa. Entre novamente para continuar seus estudos.";
+
+    setModalControlsForSessionExpired();
+
+    modalOverlay.hidden = false;
+    confirmButton.focus();
+  }
+
+  function setSubmittingState(submitting) {
+    isSubmitting = submitting;
+
+    confirmButton.disabled = submitting;
+    cancelButton.disabled = submitting;
+    closeButton.disabled = submitting;
+
+    modal.setAttribute("aria-busy", String(submitting));
+
+    if (submitting) {
+      confirmButton.textContent = "Processando...";
+      return;
+    }
+
+    if (currentAction === "session-expired") {
+      confirmButton.textContent = "Ir para login";
+    } else if (currentAction === "delete-account") {
+      confirmButton.textContent = "Excluir conta";
+    } else {
+      confirmButton.textContent = "Sair";
+    }
+  }
+
+  function closeModal() {
+    if (modalOverlay.hidden || isSubmitting) {
+      return;
+    }
+
+    if (currentAction === "session-expired") {
+      return;
+    }
+
+    modalOverlay.hidden = true;
+
+    clearModalFeedback();
+
+    currentAction = null;
+
+    if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
+      previousFocus.focus();
+    }
+
+    previousFocus = null;
+  }
+
+  function redirectToLogin() {
+    window.location.replace("auth.html?mode=login");
   }
 
   async function confirmAction() {
-    if (!currentAction) return;
+    if (!currentAction || isSubmitting) {
+      return;
+    }
 
-    confirmButton.disabled = true;
+    if (currentAction === "session-expired") {
+      redirectToLogin();
+      return;
+    }
+
+    const action = currentAction;
+
+    setSubmittingState(true);
+    clearModalFeedback();
 
     try {
-      if (currentAction === "logout") {
+      if (action === "logout") {
         await apiRequest("/logout", {
           method: "POST",
         });
-      } else if (currentAction === "delete-account") {
+      } else if (action === "delete-account") {
         await apiRequest("/users", {
           method: "DELETE",
         });
       }
 
+      clearStoredProfileName();
       window.location.replace("index.html");
     } catch (error) {
-      console.error("Erro ao executar a ação:", error);
+      console.error(`[MEMORIZEZ] Erro ao executar ${action}:`, {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
 
-      alert(
-        currentAction === "delete-account"
-          ? "Não foi possível excluir sua conta. Tente novamente."
-          : "Não foi possível encerrar a sessão. Tente novamente.",
-      );
+      if (error?.status === 401) {
+        openSessionExpiredModal();
+        return;
+      }
+
+      const communicationFailure = [
+        "NETWORK_ERROR",
+        "RESPONSE_READ_ERROR",
+        "CSRF_CONNECTION_ERROR",
+      ].includes(error?.code);
+
+      let fallbackMessage;
+
+      if (action === "delete-account") {
+        fallbackMessage = communicationFailure
+          ? "Não foi possível confirmar o resultado da exclusão devido a uma falha de comunicação. Verifique sua conexão antes de tentar novamente."
+          : "Não foi possível excluir sua conta. Tente novamente.";
+      } else {
+        fallbackMessage = communicationFailure
+          ? "Não foi possível confirmar o encerramento da sessão devido a uma falha de comunicação. Verifique sua conexão antes de tentar novamente."
+          : "Não foi possível encerrar sua sessão. Tente novamente.";
+      }
+
+      showModalFeedback(getApiErrorMessage(error, fallbackMessage));
     } finally {
-      confirmButton.disabled = false;
+      setSubmittingState(false);
     }
   }
 
-  function closeModal() {
-    if (modalOverlay.hidden) return;
+  function getFocusableElements() {
+    const selector = [
+      "button:not([disabled])",
+      "a[href]",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(",");
 
-    modalOverlay.hidden = true;
-
-    if (previousFocus instanceof HTMLElement) {
-      previousFocus.focus();
-    }
+    return [...modal.querySelectorAll(selector)].filter(
+      (element) => !element.hidden,
+    );
   }
 
   document.querySelectorAll("[data-modal-open]").forEach((button) => {
@@ -301,7 +508,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.addEventListener("keydown", (event) => {
-    if (modalOverlay.hidden) return;
+    if (modalOverlay.hidden) {
+      return;
+    }
 
     if (event.key === "Escape") {
       event.preventDefault();
@@ -309,31 +518,77 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    if (event.key !== "Tab") return;
+    if (event.key !== "Tab") {
+      return;
+    }
 
-    const focusableElements = modal.querySelectorAll(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    );
+    const focusableElements = getFocusableElements();
 
-    const elements = [...focusableElements].filter(
-      (element) => element.getClientRects().length > 0,
-    );
-
-    if (elements.length === 0) {
+    if (focusableElements.length === 0) {
       event.preventDefault();
       modal.focus();
       return;
     }
 
-    const firstElement = elements[0];
-    const lastElement = elements[elements.length - 1];
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
 
-    if (event.shiftKey && document.activeElement === firstElement) {
+    if (
+      event.shiftKey &&
+      (document.activeElement === firstElement ||
+        document.activeElement === modal)
+    ) {
       event.preventDefault();
       lastElement.focus();
-    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      return;
+    }
+
+    if (
+      !event.shiftKey &&
+      (document.activeElement === lastElement ||
+        document.activeElement === modal)
+    ) {
       event.preventDefault();
       firstElement.focus();
     }
   });
+
+  window.addEventListener("memorizez:session-expired", () => {
+    clearStoredProfileName();
+    openSessionExpiredModal();
+  });
+
+  const profileName = document.querySelector(".profile-name");
+
+  if (profileName) {
+    const cachedName = getStoredProfileName();
+
+    if (cachedName) {
+      profileName.textContent = cachedName;
+    }
+
+    try {
+      const user = await apiRequest("/users/me");
+
+      if (typeof user?.name === "string" && user.name.trim()) {
+        const authenticatedName = user.name.trim();
+
+        profileName.textContent = authenticatedName;
+        saveProfileName(authenticatedName);
+      }
+    } catch (error) {
+      if (error?.status === 401) {
+        clearStoredProfileName();
+        profileName.textContent = "Meu perfil";
+      }
+
+      console.error(
+        "[MEMORIZEZ] Não foi possível carregar os dados do usuário:",
+        {
+          status: error?.status ?? null,
+          code: error?.code ?? null,
+        },
+      );
+    }
+  }
 });

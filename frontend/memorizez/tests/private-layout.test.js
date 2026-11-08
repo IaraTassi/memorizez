@@ -63,6 +63,7 @@ describe("Private Layout", () => {
   });
 
   it("should keep the default profile name when loading the user fails", async () => {
+    sessionStorage.removeItem("memorizez.profileName");
     await loadPrivateLayoutPage(
       "collections",
       Promise.reject(new Error("Network error")),
@@ -236,22 +237,22 @@ describe("Private Layout", () => {
     });
   });
 
-  it("should show an alert when logout fails", async () => {
+  it("should show an error message when logout fails", async () => {
     await loadPrivateLayoutPage();
 
     global.apiRequest.mockRejectedValueOnce(new Error("Network error"));
-
-    const alertSpy = jest.spyOn(window, "alert").mockImplementation(() => {});
 
     const logoutButton = document.querySelector('[data-modal-open="logout"]');
 
     const overlay = document.getElementById("account-confirmation-overlay");
 
     const confirmButton = overlay.querySelector(".modal-confirm");
+    const feedback = overlay.querySelector("#confirmation-feedback");
 
     logoutButton.click();
     confirmButton.click();
 
+    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
 
@@ -259,19 +260,19 @@ describe("Private Layout", () => {
       method: "POST",
     });
 
-    expect(alertSpy).toHaveBeenCalledWith(
-      "Não foi possível encerrar a sessão. Tente novamente.",
+    expect(feedback.hidden).toBe(false);
+
+    expect(feedback.textContent).toBe(
+      "Não foi possível encerrar sua sessão. Tente novamente.",
     );
 
     expect(confirmButton.disabled).toBe(false);
   });
 
-  it("should show an alert when account deletion fails", async () => {
+  it("should show an error message when account deletion fails", async () => {
     await loadPrivateLayoutPage();
 
     global.apiRequest.mockRejectedValueOnce(new Error("Network error"));
-
-    const alertSpy = jest.spyOn(window, "alert").mockImplementation(() => {});
 
     const deleteButton = document.querySelector(
       '[data-modal-open="delete-account"]',
@@ -280,10 +281,12 @@ describe("Private Layout", () => {
     const overlay = document.getElementById("account-confirmation-overlay");
 
     const confirmButton = overlay.querySelector(".modal-confirm");
+    const feedback = overlay.querySelector("#confirmation-feedback");
 
     deleteButton.click();
     confirmButton.click();
 
+    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
 
@@ -291,7 +294,9 @@ describe("Private Layout", () => {
       method: "DELETE",
     });
 
-    expect(alertSpy).toHaveBeenCalledWith(
+    expect(feedback.hidden).toBe(false);
+
+    expect(feedback.textContent).toBe(
       "Não foi possível excluir sua conta. Tente novamente.",
     );
 

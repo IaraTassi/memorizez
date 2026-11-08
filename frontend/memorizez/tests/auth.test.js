@@ -7,16 +7,23 @@ describe("Auth", () => {
     "utf8",
   );
 
-  const bodyHtml = authHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i)[1];
+  const bodyMatch = authHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+
+  if (!bodyMatch) {
+    throw new Error("Não foi possível encontrar o body de auth.html");
+  }
+
+  const bodyHtml = bodyMatch[1];
 
   function loadAuthPage(search = "") {
     window.history.replaceState({}, "", `/auth.html${search}`);
 
     document.body.innerHTML = bodyHtml;
 
+    jest.resetModules();
+
     global.apiRequest = jest.fn();
 
-    jest.resetModules();
     require("../js/auth");
   }
 
@@ -161,9 +168,7 @@ describe("Auth", () => {
 
     expect(
       document.querySelector("#registerForm [role='alert']").textContent,
-    ).toBe(
-      "Não foi possível criar a conta. Verifique os dados ou tente outro e-mail.",
-    );
+    ).toBe("Já existe uma conta cadastrada com esses dados.");
   });
 
   it("should login successfully", async () => {
