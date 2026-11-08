@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Detalhes do cartão — MEMORIZEZ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/history-card-details.css" />
+  </head>
+
+  <body class="private-page" data-page="history-card-details">
+    <main id="main-content" class="private-main">
+      <section class="page-container" aria-labelledby="pageTitle">
+        <a class="page-back-link" href="history-cards.html">
+          ← Voltar ao histórico
+        </a>
+        <header class="page-heading">
+          <h1 id="pageTitle">Carregando cartão...</h1>
+          <p>Linha do tempo</p>
+        </header>
+        <section
+          class="history-card-next-review"
+          aria-labelledby="nextReviewTitle"
+        >
+          <h2 id="nextReviewTitle">Próxima revisão</h2>
+          <p id="nextReviewDate">Carregando...</p>
+        </section>
+
+        <div
+          id="history-card-timeline"
+          class="history-card-timeline"
+          aria-live="polite"
+        ></div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/api.js" defer></script>
+    <script src="js/private-layout.js" defer></script>
+    <script src="js/history-card-details.js" defer></script>
+  </body>
+</html>

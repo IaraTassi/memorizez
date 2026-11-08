@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meus cartões — MEMORIZEZ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/cards.css" />
+  </head>
+
+  <body class="private-page" data-page="cards">
+    <main id="main-content" class="private-main">
+      <section class="page-container" aria-labelledby="pageTitle">
+        <a class="page-back-link" href="collections.html">
+          ← Voltar às coleções
+        </a>
+        <header class="page-heading">
+          <div class="cards-page-heading">
+            <div class="cards-page-icon" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+                />
+                <path d="M3 10h18" />
+              </svg>
+            </div>
+
+            <div>
+              <h1 id="pageTitle">Carregando coleção...</h1>
+              <p id="collectionDescription" hidden></p>
+            </div>
+          </div>
+
+          <button
+            class="btn button-primary"
+            id="createCardButton"
+            type="button"
+          >
+            Novo cartão
+          </button>
+        </header>
+
+        <div id="cardsFeedback" role="status" aria-live="polite" hidden></div>
+
+        <div id="cardsList" class="cards-list">
+          <p>Carregando cartões...</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/api.js" defer></script>
+    <script src="js/private-layout.js" defer></script>
+    <script src="js/card-modals.js" defer></script>
+    <script src="js/cards.js" defer></script>
+  </body>
+</html>

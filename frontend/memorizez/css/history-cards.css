@@ -1,0 +1,194 @@
+.page-heading h1 {
+  margin: 0 0 8px;
+  font-size: 1.7rem;
+  font-weight: 600;
+}
+
+.history-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.history-card-row {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding: 20px;
+
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-smooth),
+    box-shadow var(--transition-smooth);
+}
+
+.history-card-row:hover {
+  border-color: var(--accent-green);
+  box-shadow: var(--shadow);
+}
+
+.history-card-row:focus-visible {
+  outline: 2px solid var(--color-action);
+  outline-offset: 3px;
+}
+
+.history-card-front {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.history-card-counters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-card-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.history-card-counter-value {
+  font-weight: 600;
+}
+
+.history-card-counter-label {
+  font-weight: 400;
+}
+
+.history-card-counter-edits {
+  background: var(--accent-blue-soft);
+  color: var(--text-primary);
+}
+
+.history-card-counter-remembered {
+  background: var(--accent-green-soft);
+  color: var(--text-primary);
+}
+
+.history-card-counter-not-remembered {
+  background: var(--accent-pink-soft);
+  color: var(--text-primary);
+}
+
+.history-card-action {
+  align-self: flex-end;
+  color: var(--color-action);
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition:
+    color var(--transition-smooth),
+    transform var(--transition-smooth);
+}
+
+.history-card-row:hover .history-card-action {
+  color: var(--color-action-hover);
+}
+
+.history-cards-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.history-cards-pagination-button {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-smooth),
+    background-color var(--transition-smooth);
+}
+
+.history-cards-pagination-button:hover:not(:disabled) {
+  border-color: var(--color-action);
+  background: var(--accent-green-soft);
+}
+
+.history-cards-pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.history-cards-pagination-info {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.history-cards-message,
+.history-cards-empty-message,
+.history-cards-error-message {
+  width: 100%;
+  margin: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.history-cards-error-message {
+  color: var(--text-primary);
+}
+
+@media (max-width: 600px) {
+  .history-card-row {
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .history-card-front {
+    font-size: 0.95rem;
+  }
+
+  .history-card-counters {
+    gap: 6px;
+  }
+
+  .history-card-counter {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+
+  .history-cards-pagination {
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history-card-row,
+  .history-card-action,
+  .history-cards-pagination-button {
+    transition: none;
+  }
+
+  .history-card-row:hover {
+    transform: none;
+  }
+}
