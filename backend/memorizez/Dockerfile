@@ -4,14 +4,22 @@ FROM eclipse-temurin:21-jdk AS build
 
 WORKDIR /app
 
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
+# Arquivos do Maven Wrapper e configuração do backend
+COPY backend/memorizez/.mvn/ backend/memorizez/.mvn/
+COPY backend/memorizez/mvnw backend/memorizez/pom.xml backend/memorizez/
+
+WORKDIR /app/backend/memorizez
 
 RUN chmod +x mvnw
 RUN ./mvnw -B dependency:go-offline
 
-COPY src/ src/
+# Código-fonte do backend
+COPY backend/memorizez/src/ src/
 
+# Frontend original
+COPY frontend/memorizez/ /app/frontend/memorizez/
+
+# Compilação e empacotamento
 RUN ./mvnw -B clean package -DskipTests
 
 # Etapa de execução
@@ -19,7 +27,7 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/backend/memorizez/target/*.jar app.jar
 
 EXPOSE 8080
 

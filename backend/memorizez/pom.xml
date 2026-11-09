@@ -134,7 +134,34 @@
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>
+			</plugin>			
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+            <version>3.3.1</version>
+              <executions>
+                <execution>
+                  <id>copy-frontend</id>
+                   <phase>process-resources</phase>
+                     <goals>
+                       <goal>copy-resources</goal>
+                      </goals>
+                      <configuration>
+                      <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                      <resources>
+   										 <resource>
+        									<directory>${project.basedir}/../../frontend/memorizez</directory>
+        									<filtering>false</filtering>
+        									<excludes>
+            								<exclude>node_modules/**</exclude>
+            								<exclude>tests/**</exclude>
+        									</excludes>
+    										</resource>
+											</resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
 		</plugins>
 	</build>
 

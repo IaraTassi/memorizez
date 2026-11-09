@@ -33,6 +33,15 @@ public class SecurityConfig {
                         .requireExplicitSave(true)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                               "/",
+                               "/index.html",
+                               "/*.html",
+                               "/css/**",
+                               "/js/**",
+                               "/assets/**",
+                               "/favicon.ico"
+                        ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/users", "/users/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/csrf").permitAll()
                         .requestMatchers(
