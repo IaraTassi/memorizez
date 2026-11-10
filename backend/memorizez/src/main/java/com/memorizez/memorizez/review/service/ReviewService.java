@@ -65,7 +65,7 @@ public class ReviewService {
 
         List<Card> cards = cardRepository.findAvailableForReview(
                 user,
-                LocalDate.now()
+                AppTime.today()
         );
 
         return cards.stream()
@@ -230,7 +230,7 @@ public class ReviewService {
         }
 
         review.setNextReviewDate(
-                LocalDate.now().plusDays(
+                AppTime.today().plusDays(
                         review.getStage().getIntervalDays()
                 )
         );
@@ -327,7 +327,7 @@ public class ReviewService {
 
         List<Card> cards = cardRepository.findAvailableForReviewByCollection(
                 collection,
-                LocalDate.now()
+                AppTime.today()
         );
 
         if (cards.isEmpty()) {
