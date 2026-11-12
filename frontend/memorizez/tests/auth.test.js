@@ -224,4 +224,56 @@ describe("Auth", () => {
       document.querySelector("#loginForm [role='alert']").textContent,
     ).toBe("E-mail ou senha inválidos.");
   });
+
+  it("should show a specific message when registration times out", async () => {
+    const error = new Error("Request timeout");
+    error.code = "TIMEOUT_ERROR";
+
+    global.apiRequest.mockRejectedValueOnce(error);
+
+    document.querySelector("#registerName").value = "Maria";
+    document.querySelector("#registerEmail").value = "maria@email.com";
+    document.querySelector("#registerPassword").value = "123456";
+    document.querySelector("#confirmPassword").value = "123456";
+
+    document.querySelector("#registerForm").dispatchEvent(
+      new Event("submit", {
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(
+      document.querySelector("#registerForm [role='alert']").textContent,
+    ).toBe(
+      "A solicitação de cadastro demorou mais que o esperado. Verifique se a operação foi concluída antes de tentar novamente.",
+    );
+  });
+
+  it("should show a specific message when CSRF validation times out during login", async () => {
+    const error = new Error("CSRF timeout");
+    error.code = "CSRF_TIMEOUT_ERROR";
+
+    global.apiRequest.mockRejectedValueOnce(error);
+
+    document.querySelector("#loginEmail").value = "maria@email.com";
+    document.querySelector("#loginPassword").value = "123456";
+
+    document.querySelector("#loginForm").dispatchEvent(
+      new Event("submit", {
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(
+      document.querySelector("#loginForm [role='alert']").textContent,
+    ).toBe(
+      "A validação de segurança demorou mais que o esperado. Tente novamente.",
+    );
+  });
 });

@@ -25,14 +25,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     contentContainer.replaceChildren(element);
   }
 
-  function showMessage(message, className = "free-study-session-message") {
-    const element = document.createElement("p");
-    element.className = className;
-    element.textContent = message;
-
-    contentContainer.replaceChildren(element);
-  }
-
   function showSessionError(message) {
     let errorMessage = contentContainer.querySelector(
       ".free-study-session-error",
@@ -46,14 +38,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     errorMessage.textContent = message;
-  }
-
-  function createElement(tag, className, text = "") {
-    const element = document.createElement(tag);
-    element.className = className;
-    element.textContent = text;
-
-    return element;
   }
 
   function createElement(tag, className, text = "") {

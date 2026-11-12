@@ -268,6 +268,12 @@ function setSubmitting(form, submitting, loadingText) {
 }
 
 function getBackendMessage(error) {
+  const extractErrorMessage = window.MemorizezApi?.extractErrorMessage;
+
+  if (typeof extractErrorMessage === "function") {
+    return extractErrorMessage(error?.data);
+  }
+
   const message = error?.data?.userMessage;
 
   return typeof message === "string" && message.trim() ? message.trim() : null;
@@ -286,6 +292,12 @@ function getRequestInfrastructureErrorMessage(error, operation) {
         getBackendMessage(error) ||
         "Não foi possível validar a segurança da solicitação. Atualize a página e tente novamente."
       );
+
+    case "CSRF_TIMEOUT_ERROR":
+      return "A validação de segurança demorou mais que o esperado. Tente novamente.";
+
+    case "TIMEOUT_ERROR":
+      return `A solicitação de ${operation} demorou mais que o esperado. Verifique se a operação foi concluída antes de tentar novamente.`;
 
     case "RESPONSE_READ_ERROR":
       return `Não foi possível confirmar o ${operation}. Atualize a página antes de tentar novamente.`;

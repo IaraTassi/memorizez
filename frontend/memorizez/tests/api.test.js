@@ -63,16 +63,19 @@ describe("API", () => {
 
       expect(token).toBe("test-csrf-token");
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://memorizez.onrender.com/csrf",
-        {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-          },
-        },
-      );
+      const [url, options] = global.fetch.mock.calls[0];
+
+      expect(url).toBe("https://memorizez.onrender.com/csrf");
+
+      expect(options.method).toBe("GET");
+      expect(options.credentials).toBe("include");
+
+      expect(options.headers).toEqual({
+        Accept: "application/json",
+      });
+
+      expect(options.signal).toBeDefined();
+      expect(options.signal).toBeInstanceOf(AbortSignal);
     });
 
     it("should throw an error when CSRF request fails", async () => {
@@ -117,6 +120,24 @@ describe("API", () => {
       await expect(getCsrfToken()).rejects.toMatchObject({
         code: "INVALID_CSRF_TOKEN",
       });
+    });
+
+    it("should throw CSRF_TIMEOUT_ERROR when CSRF response body reading exceeds timeout", async () => {
+      global.fetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: jest.fn(() => new Promise(() => {})),
+      });
+
+      await expect(
+        getCsrfToken({
+          timeoutMs: 20,
+        }),
+      ).rejects.toMatchObject({
+        code: "CSRF_TIMEOUT_ERROR",
+      });
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -181,13 +202,15 @@ describe("API", () => {
 
       expect(csrfUrl).toBe("https://memorizez.onrender.com/csrf");
 
-      expect(csrfOptions).toEqual({
-        method: "GET",
-        credentials: "include",
-        headers: {
-          Accept: "application/json",
-        },
+      expect(csrfOptions.method).toBe("GET");
+      expect(csrfOptions.credentials).toBe("include");
+
+      expect(csrfOptions.headers).toEqual({
+        Accept: "application/json",
       });
+
+      expect(csrfOptions.signal).toBeDefined();
+      expect(csrfOptions.signal).toBeInstanceOf(AbortSignal);
 
       const [url, options] = global.fetch.mock.calls[1];
 
@@ -196,6 +219,9 @@ describe("API", () => {
       expect(options.method).toBe("POST");
       expect(options.body).toBe(body);
       expect(options.credentials).toBe("include");
+
+      expect(options.signal).toBeDefined();
+      expect(options.signal).toBeInstanceOf(AbortSignal);
 
       expectRequestHeaders(options, {
         Accept: "application/json",
@@ -437,6 +463,50 @@ describe("API", () => {
       await expect(getCsrfToken()).rejects.toMatchObject({
         code: "CSRF_CONNECTION_ERROR",
       });
+    });
+
+    it("should throw TIMEOUT_ERROR when response body reading exceeds timeout", async () => {
+      global.fetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: jest.fn(() => new Promise(() => {})),
+      });
+
+      await expect(
+        apiRequest("/collections", {
+          timeoutMs: 20,
+        }),
+      ).rejects.toMatchObject({
+        code: "TIMEOUT_ERROR",
+      });
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should throw REQUEST_ABORTED when the request is externally cancelled", async () => {
+      global.fetch.mockImplementation(() => new Promise(() => {}));
+
+      const controller = new AbortController();
+
+      const request = apiRequest("/collections", {
+        signal: controller.signal,
+      });
+
+      controller.abort();
+
+      await expect(request).rejects.toMatchObject({
+        code: "REQUEST_ABORTED",
+      });
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should reject external URLs before making a fetch request", async () => {
+      await expect(
+        apiRequest("https://malicious-example.com/endpoint"),
+      ).rejects.toThrow("A URL da API deve pertencer à origem configurada.");
+
+      expect(global.fetch).not.toHaveBeenCalled();
     });
   });
 });

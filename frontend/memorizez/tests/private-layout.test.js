@@ -52,6 +52,36 @@ describe("Private Layout", () => {
     expect(currentLink.getAttribute("href")).toBe("review.html");
   });
 
+  it("should render the mobile bottom navigation", async () => {
+    await loadPrivateLayoutPage();
+
+    const mobileNavigation = document.querySelector(".private-bottom-nav");
+
+    expect(mobileNavigation).not.toBeNull();
+    expect(mobileNavigation.querySelectorAll("a")).toHaveLength(4);
+  });
+
+  it.each([
+    ["cards", "collections.html"],
+    ["card-details", "collections.html"],
+    ["study", "review.html"],
+    ["free-study-session", "free-study.html"],
+    ["history-cards", "history.html"],
+    ["history-card-details", "history.html"],
+  ])(
+    "should keep the parent navigation item active on the %s page",
+    async (page, expectedHref) => {
+      await loadPrivateLayoutPage(page);
+
+      const currentLink = document.querySelector(
+        '.nav-links a[aria-current="page"]',
+      );
+
+      expect(currentLink).not.toBeNull();
+      expect(currentLink.getAttribute("href")).toBe(expectedHref);
+    },
+  );
+
   it("should render the user's name after loading the profile", async () => {
     await loadPrivateLayoutPage();
 
@@ -76,10 +106,20 @@ describe("Private Layout", () => {
     expect(console.error).toHaveBeenCalled();
   });
 
-  it("should redirect to login when loading the user returns 401", async () => {
+  it("should show the session expired modal when loading the user returns 401", async () => {
     await loadPrivateLayoutPage("collections", Promise.reject({ status: 401 }));
 
     expect(global.apiRequest).toHaveBeenCalledWith("/users/me");
+
+    const overlay = document.getElementById("account-confirmation-overlay");
+
+    expect(overlay.hidden).toBe(false);
+    expect(overlay.querySelector(".modal-title").textContent).toBe(
+      "Sua sessão expirou",
+    );
+    expect(overlay.querySelector(".modal-confirm").textContent).toBe(
+      "Ir para login",
+    );
     expect(console.error).toHaveBeenCalled();
   });
 

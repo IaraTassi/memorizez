@@ -1,5 +1,115 @@
+let privateLayoutKeydownHandler = null;
+let privateLayoutSessionExpiredHandler = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
+  if (privateLayoutKeydownHandler) {
+    document.removeEventListener("keydown", privateLayoutKeydownHandler);
+  }
+
+  if (privateLayoutSessionExpiredHandler) {
+    window.removeEventListener(
+      "memorizez:session-expired",
+      privateLayoutSessionExpiredHandler,
+    );
+  }
+
   const PROFILE_NAME_STORAGE_KEY = "memorizez.profileName";
+
+  const navigationLinks = [
+    {
+      pages: ["collections", "cards", "card-details"],
+      href: "collections.html",
+      label: "Coleções",
+      icon: `
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <path d="M3 10h18"/>
+        </svg>
+      `,
+    },
+    {
+      pages: ["review", "study"],
+      href: "review.html",
+      label: "Revisão",
+      icon: `
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m2 10 10-5 10 5-10 5-10-5z"/>
+          <path d="M6 12v5c3 2 9 2 12 0v-5"/>
+          <path d="M22 10v6"/>
+        </svg>
+      `,
+    },
+    {
+      pages: ["free-study", "free-study-session"],
+      href: "free-study.html",
+      label: "Estudo livre",
+      icon: `
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z"/>
+          <path d="M4 5.5v14A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M8 7h8"/>
+          <path d="M8 11h8"/>
+        </svg>
+      `,
+    },
+    {
+      pages: ["history", "history-cards", "history-card-details"],
+      href: "history.html",
+      label: "Histórico",
+      icon: `
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 7v5l3 2"/>
+        </svg>
+      `,
+    },
+  ];
+
+  const currentPage = document.body.dataset.page;
 
   function getStoredProfileName() {
     try {
@@ -13,7 +123,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function saveProfileName(name) {
     try {
       sessionStorage.setItem(PROFILE_NAME_STORAGE_KEY, name);
-    } catch (error) {
+    } catch {
       console.warn("[MEMORIZEZ] Não foi possível armazenar o nome do perfil.");
     }
   }
@@ -21,28 +131,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   function clearStoredProfileName() {
     try {
       sessionStorage.removeItem(PROFILE_NAME_STORAGE_KEY);
-    } catch (error) {
+    } catch {
       console.warn("[MEMORIZEZ] Não foi possível limpar o nome do perfil.");
     }
   }
 
-  function renderPrivateHeader() {
-    if (document.querySelector("#private-header")) {
-      return;
-    }
-
-    const currentPage = document.body.dataset.page;
-
-    const navigationLinks = [
-      { page: "collections", href: "collections.html", label: "Coleções" },
-      { page: "review", href: "review.html", label: "Revisão" },
-      { page: "free-study", href: "free-study.html", label: "Estudo livre" },
-      { page: "history", href: "history.html", label: "Histórico" },
-    ];
-
-    const linksHTML = navigationLinks
-      .map(({ page, href, label }) => {
-        const isCurrentPage = page === currentPage;
+  function renderNavigationLinks() {
+    return navigationLinks
+      .map(({ pages, href, label }) => {
+        const isCurrentPage = pages.includes(currentPage);
 
         return `
           <a
@@ -54,78 +151,137 @@ document.addEventListener("DOMContentLoaded", async () => {
         `;
       })
       .join("");
+  }
 
-    const headerHTML = `
-      <div id="private-header">
-        <header class="navbar">
-          <a
-            class="brand"
-            href="collections.html"
-            aria-label="MEMORIZEZ, Minhas coleções"
+  function renderProfileDropdown() {
+    return `
+      <div class="dropdown profile-dropdown">
+        <button
+          class="profile-button dropdown-toggle p-0 border-0 bg-transparent d-flex align-items-center"
+          type="button"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          aria-label="Abrir menu do perfil"
+        >
+          <svg
+            class="profile-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
           >
-            <img src="assets/logo.svg" alt="" class="hero-logo" />
-          </a>
+            <circle cx="12" cy="8" r="4" />
+            <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
+          </svg>
 
-          <nav class="nav-links" aria-label="Navegação principal">
-            ${linksHTML}
-          </nav>
+          <span class="profile-name">Meu perfil</span>
+        </button>
 
-          <div class="nav-actions">
-            <div class="dropdown">
-              <button
-                class="profile-button dropdown-toggle p-0 border-0 bg-transparent d-flex align-items-center"
-                type="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                <svg
-                  class="profile-icon"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
-                </svg>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <button
+              class="dropdown-item"
+              type="button"
+              data-modal-open="logout"
+            >
+              Sair
+            </button>
+          </li>
 
-                <span class="profile-name">Meu perfil</span>
-              </button>
-
-              <ul class="dropdown-menu dropdown-menu-end">
-                <li>
-                  <button
-                    class="dropdown-item"
-                    type="button"
-                    data-modal-open="logout"
-                  >
-                    Sair
-                  </button>
-                </li>
-
-                <li>
-                  <button
-                    class="dropdown-item dropdown-item-danger"
-                    type="button"
-                    data-modal-open="delete-account"
-                  >
-                    Excluir conta
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </header>
+          <li>
+            <button
+              class="dropdown-item dropdown-item-danger"
+              type="button"
+              data-modal-open="delete-account"
+            >
+              Excluir conta
+            </button>
+          </li>
+        </ul>
       </div>
     `;
+  }
+
+  function renderPrivateHeader() {
+    if (document.querySelector("#private-header")) {
+      return;
+    }
+
+    const linksHTML = renderNavigationLinks();
+
+    const headerHTML = `
+  <div id="private-header">
+    <header class="navbar">
+      <a
+        class="brand"
+        href="collections.html"
+        aria-label="MEMORIZEZ, Minhas coleções"
+      >
+        <img src="assets/logo.svg" alt="" class="hero-logo" />
+      </a>
+
+      <nav class="nav-links" aria-label="Navegação principal">
+        ${linksHTML}
+      </nav>
+
+      <div class="nav-actions">
+        ${renderProfileDropdown()}
+      </div>
+    </header>
+  </div>
+`;
 
     document.body.insertAdjacentHTML("afterbegin", headerHTML);
+  }
+
+  function renderPrivateBottomNavigation() {
+    if (document.querySelector("#private-bottom-nav")) {
+      return;
+    }
+
+    const navigationItemsHTML = navigationLinks
+      .map(({ pages, href, label, icon }) => {
+        const isCurrentPage = pages.includes(currentPage);
+
+        return `
+          <a
+            class="bottom-nav-item"
+            href="${href}"
+            ${isCurrentPage ? 'aria-current="page"' : ""}
+          >
+            <span class="bottom-nav-icon">
+              ${icon}
+            </span>
+
+            <span class="bottom-nav-label">
+              ${label}
+            </span>
+          </a>
+        `;
+      })
+      .join("");
+
+    const bottomNavigationHTML = `
+      <nav
+        id="private-bottom-nav"
+        class="private-bottom-nav"
+        aria-label="Navegação inferior"
+      >
+        ${navigationItemsHTML}
+
+        <div class="bottom-nav-item bottom-nav-profile">
+          ${renderProfileDropdown()}
+        </div>
+      </nav>
+    `;
+
+    document.body.insertAdjacentHTML("beforeend", bottomNavigationHTML);
   }
 
   function renderPrivateFooter() {
@@ -144,7 +300,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             <img src="assets/logo.svg" alt="" class="hero-logo" />
           </a>
 
-          <span>
+          <span class="footer-copyright">
             © ${new Date().getFullYear()} Todos os direitos reservados.
           </span>
         </div>
@@ -235,6 +391,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   renderPrivateHeader();
+  renderPrivateBottomNavigation();
   renderPrivateFooter();
   renderAccountModal();
 
@@ -283,6 +440,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function getApiErrorMessage(error, fallbackMessage) {
+    const extractErrorMessage = window.MemorizezApi?.extractErrorMessage;
+
+    if (typeof extractErrorMessage === "function") {
+      return extractErrorMessage(error?.data) || fallbackMessage;
+    }
+
     const userMessage = error?.data?.userMessage;
 
     return typeof userMessage === "string" && userMessage.trim()
@@ -456,6 +619,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         "NETWORK_ERROR",
         "RESPONSE_READ_ERROR",
         "CSRF_CONNECTION_ERROR",
+        "TIMEOUT_ERROR",
       ].includes(error?.code);
 
       let fallbackMessage;
@@ -507,7 +671,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  document.addEventListener("keydown", (event) => {
+  privateLayoutKeydownHandler = (event) => {
     if (modalOverlay.hidden) {
       return;
     }
@@ -551,20 +715,29 @@ document.addEventListener("DOMContentLoaded", async () => {
       event.preventDefault();
       firstElement.focus();
     }
-  });
+  };
 
-  window.addEventListener("memorizez:session-expired", () => {
+  document.addEventListener("keydown", privateLayoutKeydownHandler);
+
+  privateLayoutSessionExpiredHandler = () => {
     clearStoredProfileName();
     openSessionExpiredModal();
-  });
+  };
 
-  const profileName = document.querySelector(".profile-name");
+  window.addEventListener(
+    "memorizez:session-expired",
+    privateLayoutSessionExpiredHandler,
+  );
 
-  if (profileName) {
+  const profileNames = document.querySelectorAll(".profile-name");
+
+  if (profileNames.length > 0) {
     const cachedName = getStoredProfileName();
 
     if (cachedName) {
-      profileName.textContent = cachedName;
+      profileNames.forEach((element) => {
+        element.textContent = cachedName;
+      });
     }
 
     try {
@@ -573,13 +746,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (typeof user?.name === "string" && user.name.trim()) {
         const authenticatedName = user.name.trim();
 
-        profileName.textContent = authenticatedName;
+        profileNames.forEach((element) => {
+          element.textContent = authenticatedName;
+        });
+
         saveProfileName(authenticatedName);
       }
     } catch (error) {
       if (error?.status === 401) {
         clearStoredProfileName();
-        profileName.textContent = "Meu perfil";
+
+        profileNames.forEach((element) => {
+          element.textContent = "Meu perfil";
+        });
+
+        openSessionExpiredModal();
       }
 
       console.error(

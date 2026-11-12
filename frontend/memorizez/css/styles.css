@@ -60,11 +60,11 @@ a {
   text-decoration: none;
 }
 
-/* Botões das páginas privadas */
-
 button {
   font: inherit;
 }
+
+/* Botões das páginas privadas */
 
 .btn {
   min-height: 46px;
@@ -73,8 +73,10 @@ button {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.7rem 1.25rem;
+
   border: 1px solid transparent;
   border-radius: 0.5rem;
+
   font-family: var(--font-family-base);
   font-size: 1rem;
   font-weight: 600;
@@ -82,8 +84,10 @@ button {
   text-align: center;
   text-decoration: none;
   vertical-align: middle;
-  cursor: pointer;
   white-space: nowrap;
+
+  cursor: pointer;
+
   transition:
     background var(--transition-smooth),
     border-color var(--transition-smooth),
@@ -163,6 +167,7 @@ button {
 
   border: 1px solid var(--border);
   border-radius: 0.5rem;
+
   background: var(--surface);
   color: var(--text-primary);
 
@@ -203,6 +208,7 @@ button {
   width: min(1160px, calc(100% - 48px));
   min-height: 76px;
   margin: 0 auto;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -225,23 +231,44 @@ button {
 
 .nav-links {
   display: flex;
+  flex: 1;
   align-items: center;
+  justify-content: center;
   gap: 24px;
+
   color: var(--text-primary);
   font-size: 0.9rem;
 }
 
-.nav-links a,
-.nav-login {
-  transition: color var(--transition-smooth);
+.nav-links a {
+  display: inline-flex;
+  align-items: center;
+
+  border-bottom: 2px solid transparent;
+
+  color: var(--text-primary);
+  text-decoration: none;
+
+  transition:
+    color var(--transition-smooth),
+    border-color var(--transition-smooth);
 }
 
 .nav-links a:hover,
-.nav-login:hover {
+.nav-links a:focus-visible {
   color: var(--color-action);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+.nav-links a[aria-current="page"] {
+  color: var(--color-action-hover);
+  text-decoration: none;
+  border-bottom-color: var(--color-action);
+  font-weight: 600;
+}
+
+/* Menu do perfil das páginas privadas */
 
 .nav-actions {
   display: flex;
@@ -249,6 +276,11 @@ button {
   gap: 16px;
   flex-shrink: 0;
   font-size: 0.9rem;
+}
+
+.nav-actions .profile-dropdown {
+  display: flex;
+  align-items: center;
 }
 
 .nav-actions .hero-button {
@@ -264,9 +296,15 @@ button {
   align-items: center;
   gap: 8px;
   padding: 4px 0 4px 4px;
+
+  text-decoration: none;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--transition-smooth);
+
   border: none;
   background: transparent;
   color: var(--text-primary);
+
   font: inherit;
   cursor: pointer;
 }
@@ -280,30 +318,35 @@ button {
   font-weight: 500;
 }
 
-.profile-button:hover {
-  color: var(--color-action);
+.profile-button:hover,
+.profile-button:focus-visible {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-/* Menu do perfil das páginas privadas */
-
-.nav-actions .dropdown-menu {
+.profile-dropdown .dropdown-menu {
   min-width: 180px;
   padding: 6px;
-  margin-top: 8px !important;
+  margin-top: 8px;
+
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: var(--shadow);
 }
 
-.nav-actions .dropdown-item {
+.profile-dropdown .dropdown-item {
   display: block;
   width: 100%;
   padding: 10px;
+
   border: 0;
   border-radius: 5px;
+
   background: transparent;
   color: var(--text-primary);
+
   font-family: inherit;
   font-size: 0.875rem;
   font-weight: 400;
@@ -312,31 +355,30 @@ button {
   white-space: nowrap;
 }
 
-.nav-actions .dropdown-item:hover,
-.nav-actions .dropdown-item:focus-visible {
+.profile-dropdown .dropdown-item:hover,
+.profile-dropdown .dropdown-item:focus-visible {
   background: var(--background);
   color: var(--color-action);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.nav-actions .dropdown-item-danger {
+.profile-dropdown .dropdown-item-danger {
   color: var(--text-primary);
 }
 
-.nav-actions .dropdown-item-danger:hover,
-.nav-actions .dropdown-item-danger:focus-visible {
+.profile-dropdown .dropdown-item-danger:hover,
+.profile-dropdown .dropdown-item-danger:focus-visible {
   color: var(--color-action);
 }
 
 /* Link de voltar das páginas privadas */
+
 .page-back-link {
   display: inline-flex;
   align-items: center;
   margin-bottom: 1.5rem;
 }
-
-/* Header das páginas privadas */
 
 .page-back-link:hover {
   color: var(--color-action-hover);
@@ -355,11 +397,41 @@ button {
   flex: 0 0 40px;
   align-items: center;
   justify-content: center;
+
   width: 40px;
   height: 40px;
+
   border-radius: 8px;
   background: var(--accent-green-soft);
   color: var(--color-action);
+}
+
+/* Estrutura das páginas privadas */
+
+body.private-page {
+  min-height: 100vh;
+  min-height: 100svh;
+
+  display: flex;
+  flex-direction: column;
+}
+
+#private-header,
+#private-footer {
+  flex-shrink: 0;
+}
+
+.private-main {
+  flex: 1 0 auto;
+  width: 100%;
+}
+
+.private-bottom-nav {
+  display: none;
+}
+
+.mobile-footer-nav {
+  display: none;
 }
 
 /* Rodapé das páginas privadas */
@@ -372,10 +444,12 @@ footer {
 .footer-inner {
   width: min(1160px, 100%);
   margin: 0 auto;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 24px;
+
   color: var(--text-secondary);
   font-size: 0.82rem;
 }
@@ -386,9 +460,11 @@ footer {
   position: fixed;
   inset: 0;
   z-index: 1000;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   padding: 24px;
   background: rgb(0 0 0 / 45%);
 }
@@ -401,6 +477,7 @@ footer {
   position: relative;
   width: min(100%, 420px);
   padding: 28px;
+
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -410,14 +487,18 @@ footer {
   position: absolute;
   top: 16px;
   right: 16px;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   padding: 4px;
+
   background: transparent;
   border: none;
   box-shadow: none;
   color: var(--text-secondary);
+
   cursor: pointer;
 }
 
@@ -454,10 +535,7 @@ footer {
   outline-offset: 3px;
 }
 
-.modal-cancel {
-  width: 120px;
-}
-
+.modal-cancel,
 .modal-confirm {
   width: 120px;
 }
@@ -468,9 +546,11 @@ footer {
   position: fixed;
   inset: 0;
   z-index: 1100;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   padding: 24px;
   background: rgb(0 0 0 / 45%);
 }
@@ -485,6 +565,7 @@ footer {
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   padding: 28px;
+
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -513,17 +594,17 @@ footer {
   margin-top: 28px;
 }
 
-.card-modal form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .card-modal {
   width: min(100%, 480px);
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   box-shadow: var(--shadow);
+}
+
+.card-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .card-modal label {
@@ -536,10 +617,13 @@ footer {
   width: 100%;
   min-height: 90px;
   padding: 10px 12px;
+
   border: 1px solid var(--border);
   border-radius: 6px;
+
   background: var(--surface);
   color: var(--text-primary);
+
   font: inherit;
   resize: vertical;
 }
@@ -551,6 +635,172 @@ footer {
 
 #card-edit-warning[hidden] {
   display: none;
+}
+
+@media (max-width: 760px) {
+  body.private-page {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  #private-footer {
+    display: none;
+  }
+
+  #private-header .nav-links,
+  .nav-actions {
+    display: none;
+  }
+
+  .mobile-footer-nav {
+    display: none;
+  }
+
+  .private-bottom-nav {
+    position: fixed;
+    z-index: 1030;
+    right: 0;
+    bottom: 0;
+    left: 0;
+
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: center;
+
+    min-height: calc(68px + env(safe-area-inset-bottom));
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .bottom-nav-item {
+    min-width: 0;
+    min-height: 52px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+
+    padding: 4px 2px;
+
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+
+    color: var(--text-primary);
+    background: transparent;
+    text-decoration: none;
+
+    font: inherit;
+    line-height: 1.2;
+
+    cursor: pointer;
+
+    transition:
+      color var(--transition-smooth),
+      border-color var(--transition-smooth);
+  }
+
+  .bottom-nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+  }
+
+  .bottom-nav-icon svg {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .bottom-nav-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+
+    font-size: 0.68rem;
+    font-weight: 500;
+  }
+
+  .bottom-nav-item:hover,
+  .bottom-nav-item:focus-visible {
+    color: var(--color-action);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .bottom-nav-item[aria-current="page"] {
+    color: var(--color-action-hover);
+    background: transparent;
+    text-decoration: none;
+    border-bottom-color: var(--color-action);
+    font-weight: 600;
+  }
+
+  .bottom-nav-item:focus-visible {
+    outline: 2px solid var(--color-action);
+    outline-offset: 2px;
+  }
+
+  .bottom-nav-profile .profile-dropdown {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .bottom-nav-profile .profile-button {
+    width: 100%;
+    min-height: 52px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+
+    color: inherit;
+    font: inherit;
+  }
+
+  .bottom-nav-profile .profile-button::after {
+    display: none;
+  }
+
+  .bottom-nav-profile .profile-name {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-size: 0.68rem;
+    font-weight: 500;
+  }
+
+  .bottom-nav-profile .dropdown-menu {
+    top: auto;
+    bottom: 100%;
+    margin-top: 0;
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 380px) {
+  .private-bottom-nav {
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+
+  .bottom-nav-label,
+  .bottom-nav-profile .profile-name {
+    font-size: 0.63rem;
+  }
 }
 
 @media (max-width: 480px) {
