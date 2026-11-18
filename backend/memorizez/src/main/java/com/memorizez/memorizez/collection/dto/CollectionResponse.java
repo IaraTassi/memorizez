@@ -12,7 +12,7 @@ public class CollectionResponse {
     private String id;
     @Schema(description = "Nome da coleção", example = "Java Fundamentos")
     private String name;
-    @Schema(description = "Data de criação da coleção", example = "2026-10-21")
+    @Schema(description = "Data de criação da coleção", example = "2026-10-01T14:30:00")
     private LocalDateTime createdAt;
     @Schema(description = "Quantidade total de cartões da coleção", example = "20")
     private long cardCount;

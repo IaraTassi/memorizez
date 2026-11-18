@@ -16,7 +16,7 @@ public class CardResponse {
     private String back;
     @Schema(description = "Observações adicionais do cartão", example = "Revisar os conceitos de orientação a objetos.")
     private String notes;
-    @Schema(description = "Data de criação do cartão", example = "2026-10-21")
+    @Schema(description = "Data de criação do cartão", example = "2026-10-21T14:30:00")
     private LocalDateTime createdAt;
     @Schema(description = "Quantidade de vezes que o cartão foi lembrado", example = "5")
     private Integer rememberedCount;

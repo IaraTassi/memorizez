@@ -17,7 +17,7 @@ public record HistoryCardDetailResponse(
         long notRememberedCount,
         @Schema(description = "Quantidade de edições", example = "1")
         long editCount,
-        @Schema(description = "Data de criação do cartão", example = "2026-10-01")
+        @Schema(description = "Data de criação do cartão", example = "2026-10-01T14:30:00")
         LocalDateTime createdAt,
         @Schema(description = "Data prevista para a próxima revisão", example = "2026-10-28")
         LocalDate nextReviewDate

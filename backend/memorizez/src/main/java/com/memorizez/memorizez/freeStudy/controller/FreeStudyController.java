@@ -65,7 +65,7 @@ public class FreeStudyController {
     }
 
     @GetMapping("/collections/{collectionId}/cards/{cardId}/back")
-    @Operation(summary = "Consultar verso do cartão", description = "Retorna o conteúdo do cartão para estudo livre, incluindo o texto da frente, o texto do verso e as observações adicionais, quando disponíveis")
+    @Operation(summary = "Consultar verso do cartão", description = "Retorna o verso do cartão selecionado para estudo livre, incluindo as observações adicionais, quando disponíveis.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Verso do cartão retornado com sucesso"),
             @ApiResponse(responseCode = "401", description = "Usuário não autenticado"),
@@ -88,7 +88,7 @@ public class FreeStudyController {
 
 
     @GetMapping("/collections/{collectionId}/cards/{cardId}")
-    @Operation(summary = "Avançar para o próximo cartão", description = "Retorna o próximo cartão da coleção durante o estudo livre, considerando a posição do cartão informado.")
+    @Operation(summary = "Avançar para o próximo cartão", description = "Retorna o próximo cartão da coleção a partir do cartão informado, sem alterar os registros de revisão programada.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Próximo cartão retornado com sucesso"),
             @ApiResponse(responseCode = "204", description = "Não há próximo cartão disponível"),

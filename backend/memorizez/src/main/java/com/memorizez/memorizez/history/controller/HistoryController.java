@@ -72,7 +72,7 @@ public class HistoryController {
     }
 
     @GetMapping("/collections/{collectionId}/cards/{cardId}")
-    @Operation(summary = "Consultar detalhes de uma cartão", description = "Retorna os detalhes do cartão informado no contexto da coleção selecionada.")
+    @Operation(summary = "Consultar detalhes de um cartão", description = "Retorna os detalhes do cartão informado, incluindo os contadores de respostas lembradas, não lembradas e edições, além das datas de criação e próxima revisão.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Detalhes do cartão retornados com sucesso"),
             @ApiResponse(responseCode = "401", description = "Usuário não autenticado"),
@@ -94,7 +94,7 @@ public class HistoryController {
     }
 
     @GetMapping("/collections/{collectionId}/cards/{cardId}/history")
-    @Operation(summary = "Consultar histórico de revisões de um cartão", description = "Retorna os registros das revisões do cartão informado, com suporte à paginação.")
+    @Operation(summary = "Consultar histórico de revisões de um cartão", description = "Retorna os registros das revisões do cartão informado, com suporte à paginação, permitindo acompanhar seu histórico de desempenho.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Histórico retornado com sucesso"),
             @ApiResponse(responseCode = "401", description = "Usuário não autenticado"),

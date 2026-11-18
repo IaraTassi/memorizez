@@ -7,6 +7,7 @@ import com.memorizez.memorizez.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -85,6 +86,7 @@ public class UserController {
     }
 
     @DeleteMapping
+    @SecurityRequirement(name = "sessionAuth")
     @Operation(summary = "Excluir conta do usuário", description = "Exclui a conta do usuário autenticado e encerra sua sessão.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Conta excluída com sucesso."),
@@ -110,6 +112,7 @@ public class UserController {
     }
 
     @GetMapping("/me")
+    @SecurityRequirement(name = "sessionAuth")
     @Operation(
             summary = "Consultar usuário autenticado",
             description = "Retorna os dados básicos do usuário da sessão atual."
