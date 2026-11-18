@@ -40,7 +40,8 @@ public class SecurityConfig {
                                "/css/**",
                                "/js/**",
                                "/assets/**",
-                               "/favicon.ico"
+                               "/favicon.ico",
+                               "/swagger-csrf.js"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/users", "/users/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/csrf").permitAll()
