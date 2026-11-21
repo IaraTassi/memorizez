@@ -41,6 +41,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   let editingCard = null;
   let deletingCard = null;
   let loadedCards = [];
+  const pageSize = 20;
+  let currentPage = 0;
 
   const params = new URLSearchParams(window.location.search);
   const collectionId = params.get("collectionId");
@@ -542,20 +544,60 @@ document.addEventListener("DOMContentLoaded", async () => {
     return item;
   }
 
-  async function loadCards() {
+  function createPagination(page) {
+    if (page.totalPages <= 1) {
+      return null;
+    }
+
+    const pagination = document.createElement("nav");
+    pagination.className = "history-cards-pagination";
+    pagination.setAttribute("aria-label", "Paginação dos cartões");
+
+    const previousButton = document.createElement("button");
+    previousButton.className = "history-cards-pagination-button";
+    previousButton.type = "button";
+    previousButton.textContent = "Anterior";
+    previousButton.disabled = page.first;
+
+    previousButton.addEventListener("click", () => {
+      loadCards(currentPage - 1);
+    });
+
+    const pageInformation = document.createElement("span");
+    pageInformation.className = "history-cards-pagination-info";
+    pageInformation.textContent = `Página ${page.number + 1} de ${page.totalPages}`;
+
+    const nextButton = document.createElement("button");
+    nextButton.className = "history-cards-pagination-button";
+    nextButton.type = "button";
+    nextButton.textContent = "Próxima";
+    nextButton.disabled = page.last;
+
+    nextButton.addEventListener("click", () => {
+      loadCards(currentPage + 1);
+    });
+
+    pagination.append(previousButton, pageInformation, nextButton);
+
+    return pagination;
+  }
+
+  async function loadCards(pageNumber = 0) {
+    currentPage = pageNumber;
+
     hideFeedback();
     showMessage("Carregando cartões...");
 
     try {
       const page = await apiRequest(
-        `/collections/${encodeURIComponent(collectionId)}/cards?page=0&size=100`,
+        `/collections/${encodeURIComponent(collectionId)}/cards?page=${pageNumber}&size=${pageSize}`,
       );
 
-      const cards = page.content;
-
-      if (!Array.isArray(cards)) {
+      if (!page || !Array.isArray(page.content)) {
         throw new Error("Formato inesperado ao carregar os cartões.");
       }
+
+      const cards = page.content;
 
       loadedCards = cards;
 
@@ -575,13 +617,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         fragment.append(createCardItem(card));
       });
 
-      cardsList.replaceChildren(fragment);
+      const pagination = createPagination(page);
 
-      if (page.totalPages > 1) {
-        showFeedback(
-          `Exibindo ${cards.length} cartões desta página. Há mais cartões nesta coleção.`,
-        );
+      if (pagination) {
+        fragment.append(pagination);
       }
+
+      cardsList.replaceChildren(fragment);
     } catch (error) {
       console.error("Não foi possível carregar os cartões:", error);
 
@@ -591,6 +633,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       showMessage("Não foi possível carregar os cartões.");
+
       showFeedback(
         error.message === "Formato inesperado ao carregar os cartões."
           ? error.message

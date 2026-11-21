@@ -59,7 +59,7 @@ describe("Cards", () => {
 
     expect(apiRequest).toHaveBeenNthCalledWith(
       2,
-      "/collections/1/cards?page=0&size=100",
+      "/collections/1/cards?page=0&size=20",
     );
 
     expect(document.querySelector("#pageTitle").textContent).toBe("Java");

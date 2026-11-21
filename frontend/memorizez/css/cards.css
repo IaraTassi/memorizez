@@ -163,6 +163,43 @@
   text-align: right;
 }
 
+.history-cards-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.history-cards-pagination-button {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-smooth),
+    background-color var(--transition-smooth);
+}
+
+.history-cards-pagination-button:hover:not(:disabled) {
+  border-color: var(--color-action);
+  background: var(--accent-green-soft);
+}
+
+.history-cards-pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.history-cards-pagination-info {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
 @media (max-width: 760px) {
   .cards-page-heading h1 {
     font-size: 1.6rem;
@@ -170,6 +207,10 @@
 
   .card-item {
     padding: 16px;
+  }
+
+  .history-cards-pagination {
+    gap: 12px;
   }
 }
 
