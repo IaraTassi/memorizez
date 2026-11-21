@@ -58,15 +58,74 @@ function renderCardModals() {
           deste cartão será reiniciado.
         </div>
 
-        <form id="card-form">
+        <form id="card-form" novalidate>
           <label for="card-front">Frente</label>
-          <textarea id="card-front" required></textarea>
+          <textarea
+            class="form-control"
+            id="card-front"
+            required
+            aria-describedby="card-front-feedback card-front-counter"
+          ></textarea>
+
+          <div
+            id="card-front-feedback"
+            class="card-field-feedback"
+            role="alert"
+            hidden
+          ></div>
+
+          <div
+            id="card-front-counter"
+            class="card-field-counter"
+            aria-live="polite"
+          >
+            0 / 200 caracteres
+          </div>
 
           <label for="card-back">Verso</label>
-          <textarea id="card-back" required></textarea>
+          <textarea
+            class="form-control"
+            id="card-back"
+            required
+            aria-describedby="card-back-feedback card-back-counter"
+          ></textarea>
+
+          <div
+            id="card-back-feedback"
+            class="card-field-feedback"
+            role="alert"
+            hidden
+          ></div>
+
+          <div
+            id="card-back-counter"
+            class="card-field-counter"
+            aria-live="polite"
+          >
+            0 / 400 caracteres
+          </div>
 
           <label for="card-notes">Notas</label>
-          <textarea id="card-notes"></textarea>
+          <textarea
+            class="form-control"
+            id="card-notes"
+            aria-describedby="card-notes-feedback card-notes-counter"
+          ></textarea>
+
+          <div
+            id="card-notes-feedback"
+            class="card-field-feedback"
+            role="alert"
+            hidden
+          ></div>
+
+          <div
+            id="card-notes-counter"
+            class="card-field-counter"
+            aria-live="polite"
+          >
+            0 / 300 caracteres
+          </div>
 
           <div class="modal-actions">
             <button
@@ -109,21 +168,22 @@ function renderCardModals() {
           aria-label="Fechar confirmação de exclusão"
         >
           <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
           >
-          <path d="M18 6 6 18" />
-          <path d="m6 6 12 12" />
-        </svg>
-      </button>
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+
         <h2 class="modal-title" id="delete-card-title">
           Excluir cartão?
         </h2>

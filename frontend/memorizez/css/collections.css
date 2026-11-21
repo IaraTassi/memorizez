@@ -215,6 +215,24 @@
   margin-bottom: 20px;
 }
 
+.collection-field-feedback {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.collection-field-feedback:not([hidden]) {
+  color: var(--validation-error);
+}
+
+.collection-field-counter {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: right;
+}
+
 @media (max-width: 760px) {
   .page-heading {
     align-items: flex-start;

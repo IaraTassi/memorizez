@@ -186,13 +186,11 @@ button {
   box-shadow: var(--color-shadow);
 }
 
-.form-control[aria-invalid="true"] {
-  border-color: var(--validation-error);
-}
-
+.form-control[aria-invalid="true"],
 .form-control[aria-invalid="true"]:focus {
-  border-color: var(--validation-error);
-  box-shadow: var(--validation-shadow);
+  border: 1px solid var(--validation-error);
+  outline: none;
+  box-shadow: none;
 }
 
 .form-label {

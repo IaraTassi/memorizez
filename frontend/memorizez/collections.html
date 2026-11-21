@@ -91,7 +91,7 @@
           Dê um nome à sua coleção para organizar seus cartões de estudo.
         </p>
 
-        <form id="collection-form">
+        <form id="collection-form" novalidate>
           <div class="collection-form-field">
             <label class="form-label" for="collection-name">
               Nome da coleção
@@ -102,10 +102,25 @@
               type="text"
               id="collection-name"
               name="name"
-              maxlength="100"
               required
               autocomplete="off"
+              aria-describedby="collection-name-feedback collection-name-counter"
             />
+
+            <div
+              id="collection-name-feedback"
+              class="collection-field-feedback"
+              role="alert"
+              hidden
+            ></div>
+
+            <div
+              id="collection-name-counter"
+              class="collection-field-counter"
+              aria-live="polite"
+            >
+              0 / 100 caracteres
+            </div>
           </div>
 
           <div class="modal-actions">

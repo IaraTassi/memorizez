@@ -10,6 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const form = document.getElementById("collection-form");
   const nameInput = document.getElementById("collection-name");
+  const nameFeedback = document.getElementById("collection-name-feedback");
+  const nameCounter = document.getElementById("collection-name-counter");
   const closeFormButton = document.getElementById("close-collection-form");
   const cancelFormButton = document.getElementById("cancel-collection-form");
   const saveButton = document.getElementById("save-collection");
@@ -41,12 +43,38 @@ document.addEventListener("DOMContentLoaded", () => {
     delete feedback.dataset.type;
   }
 
+  function updateNameCounter() {
+    const length = nameInput.value.length;
+
+    nameCounter.textContent = `${length} / 100 caracteres`;
+  }
+
+  function showNameFeedback(message) {
+    nameFeedback.textContent = message;
+    nameFeedback.hidden = false;
+    nameInput.setAttribute("aria-invalid", "true");
+  }
+
+  function clearNameFeedback() {
+    nameFeedback.textContent = "";
+    nameFeedback.hidden = true;
+    nameInput.removeAttribute("aria-invalid");
+  }
+
+  nameInput.addEventListener("input", () => {
+    updateNameCounter();
+    clearNameFeedback();
+  });
+
   function openModal(collection = null) {
     previousFocusedElement = document.activeElement;
     editingCollection = collection;
 
     form.reset();
     clearFeedback();
+
+    clearNameFeedback();
+    updateNameCounter();
 
     if (editingCollection) {
       modalTitle.textContent = "Editar coleção";
@@ -364,20 +392,18 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     clearFeedback();
+    clearNameFeedback();
 
     const name = nameInput.value.trim();
 
     if (!name) {
-      showFeedback("Informe um nome para a coleção.", "error");
+      showNameFeedback("Informe um nome para a coleção.");
       nameInput.focus();
       return;
     }
 
     if (name.length > 100) {
-      showFeedback(
-        "O nome da coleção deve ter no máximo 100 caracteres.",
-        "error",
-      );
+      showNameFeedback("O nome da coleção deve ter no máximo 100 caracteres.");
       nameInput.focus();
       return;
     }

@@ -479,9 +479,12 @@ describe("Cards", () => {
 
     expect(apiRequest).toHaveBeenCalledTimes(2);
 
-    expect(document.querySelector("#cardsFeedback").textContent).toBe(
-      "Preencha a frente e o verso do cartão.",
-    );
+    const front = document.querySelector("#card-front");
+    const feedback = document.querySelector("#card-front-feedback");
+
+    expect(feedback.textContent).toBe("Preencha a frente do cartão.");
+    expect(feedback.hidden).toBe(false);
+    expect(front.getAttribute("aria-invalid")).toBe("true");
   });
 
   it("should not create a card when the back is empty", async () => {
@@ -510,9 +513,12 @@ describe("Cards", () => {
 
     expect(apiRequest).toHaveBeenCalledTimes(2);
 
-    expect(document.querySelector("#cardsFeedback").textContent).toBe(
-      "Preencha a frente e o verso do cartão.",
-    );
+    const back = document.querySelector("#card-back");
+    const feedback = document.querySelector("#card-back-feedback");
+
+    expect(feedback.textContent).toBe("Preencha o verso do cartão.");
+    expect(feedback.hidden).toBe(false);
+    expect(back.getAttribute("aria-invalid")).toBe("true");
   });
 
   it("should not create a card when collectionId is missing", async () => {

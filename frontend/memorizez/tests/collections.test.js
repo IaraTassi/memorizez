@@ -84,7 +84,7 @@ describe("Collections", () => {
     const openButton = document.getElementById("createCollectionButton");
     const form = document.getElementById("collection-form");
     const nameInput = document.getElementById("collection-name");
-    const feedback = document.getElementById("collectionsFeedback");
+    const nameFeedback = document.getElementById("collection-name-feedback");
 
     openButton.click();
 
@@ -97,8 +97,10 @@ describe("Collections", () => {
       "/collections",
       expect.objectContaining({ method: "POST" }),
     );
-    expect(feedback.textContent).toBe("Informe um nome para a coleção.");
-    expect(feedback.dataset.type).toBe("error");
+
+    expect(nameFeedback.textContent).toBe("Informe um nome para a coleção.");
+    expect(nameFeedback.hidden).toBe(false);
+    expect(nameInput.getAttribute("aria-invalid")).toBe("true");
   });
 
   it("should not create a collection with a name longer than 100 characters", () => {
@@ -107,7 +109,7 @@ describe("Collections", () => {
     const openButton = document.getElementById("createCollectionButton");
     const form = document.getElementById("collection-form");
     const nameInput = document.getElementById("collection-name");
-    const feedback = document.getElementById("collectionsFeedback");
+    const nameFeedback = document.getElementById("collection-name-feedback");
 
     openButton.click();
 
@@ -120,10 +122,12 @@ describe("Collections", () => {
       "/collections",
       expect.objectContaining({ method: "POST" }),
     );
-    expect(feedback.textContent).toBe(
+
+    expect(nameFeedback.textContent).toBe(
       "O nome da coleção deve ter no máximo 100 caracteres.",
     );
-    expect(feedback.dataset.type).toBe("error");
+    expect(nameFeedback.hidden).toBe(false);
+    expect(nameInput.getAttribute("aria-invalid")).toBe("true");
   });
 
   it("should create a collection successfully", async () => {

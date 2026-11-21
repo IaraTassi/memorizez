@@ -143,6 +143,26 @@
   text-align: center;
 }
 
+.card-field-feedback {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.card-field-feedback:not([hidden]) {
+  color: var(--validation-error);
+}
+
+.card-field-counter {
+  margin-top: 6px;
+  display: block;
+  width: 100%;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: right;
+}
+
 @media (max-width: 760px) {
   .cards-page-heading h1 {
     font-size: 1.6rem;

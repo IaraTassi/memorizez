@@ -17,6 +17,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const cardFront = document.querySelector("#card-front");
   const cardBack = document.querySelector("#card-back");
   const cardNotes = document.querySelector("#card-notes");
+  const cardFrontFeedback = document.querySelector("#card-front-feedback");
+  const cardBackFeedback = document.querySelector("#card-back-feedback");
+  const cardNotesFeedback = document.querySelector("#card-notes-feedback");
+
+  const cardFrontCounter = document.querySelector("#card-front-counter");
+  const cardBackCounter = document.querySelector("#card-back-counter");
+  const cardNotesCounter = document.querySelector("#card-notes-counter");
   const cardModalTitle = document.querySelector("#card-modal-title");
   const cardModalDescription = document.querySelector(
     "#card-modal-description",
@@ -50,6 +57,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     !cardFront ||
     !cardBack ||
     !cardNotes ||
+    !cardFrontFeedback ||
+    !cardBackFeedback ||
+    !cardNotesFeedback ||
+    !cardFrontCounter ||
+    !cardBackCounter ||
+    !cardNotesCounter ||
     !saveCardButton ||
     !deleteCardOverlay ||
     !confirmDeleteCardButton
@@ -103,6 +116,49 @@ document.addEventListener("DOMContentLoaded", async () => {
     return `${formattedDate} às ${hours}:${minutes}`;
   }
 
+  function updateCardCounter(field, counter, limit) {
+    counter.textContent = `${field.value.length} / ${limit} caracteres`;
+  }
+
+  function showCardFieldFeedback(field, feedback, message) {
+    feedback.textContent = message;
+    feedback.hidden = false;
+    field.setAttribute("aria-invalid", "true");
+  }
+
+  function clearCardFieldFeedback(field, feedback) {
+    feedback.textContent = "";
+    feedback.hidden = true;
+    field.removeAttribute("aria-invalid");
+  }
+
+  function clearAllCardFieldFeedback() {
+    clearCardFieldFeedback(cardFront, cardFrontFeedback);
+    clearCardFieldFeedback(cardBack, cardBackFeedback);
+    clearCardFieldFeedback(cardNotes, cardNotesFeedback);
+  }
+
+  function updateAllCardCounters() {
+    updateCardCounter(cardFront, cardFrontCounter, 200);
+    updateCardCounter(cardBack, cardBackCounter, 400);
+    updateCardCounter(cardNotes, cardNotesCounter, 300);
+  }
+
+  cardFront.addEventListener("input", () => {
+    updateCardCounter(cardFront, cardFrontCounter, 200);
+    clearCardFieldFeedback(cardFront, cardFrontFeedback);
+  });
+
+  cardBack.addEventListener("input", () => {
+    updateCardCounter(cardBack, cardBackCounter, 400);
+    clearCardFieldFeedback(cardBack, cardBackFeedback);
+  });
+
+  cardNotes.addEventListener("input", () => {
+    updateCardCounter(cardNotes, cardNotesCounter, 300);
+    clearCardFieldFeedback(cardNotes, cardNotesFeedback);
+  });
+
   async function loadCollection() {
     const collections = await apiRequest("/collections");
 
@@ -120,6 +176,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   function openCardModal() {
     if (!cardModalOverlay || !cardModal) return;
 
+    clearAllCardFieldFeedback();
+    updateAllCardCounters();
+
     cardModalOverlay.hidden = false;
     cardModal.focus();
   }
@@ -129,6 +188,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     cardModalOverlay.hidden = true;
     cardForm?.reset();
+
+    clearAllCardFieldFeedback();
+    updateAllCardCounters();
 
     editingCard = null;
 
@@ -198,6 +260,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     cardForm.addEventListener("submit", async (event) => {
       event.preventDefault();
 
+      clearAllCardFieldFeedback();
+
       if (!collectionId) {
         showFeedback("Não foi possível identificar a coleção.", "error");
         return;
@@ -207,8 +271,53 @@ document.addEventListener("DOMContentLoaded", async () => {
       const back = cardBack.value.trim();
       const notes = cardNotes.value.trim();
 
-      if (!front || !back) {
-        showFeedback("Preencha a frente e o verso do cartão.", "error");
+      if (!front) {
+        showCardFieldFeedback(
+          cardFront,
+          cardFrontFeedback,
+          "Preencha a frente do cartão.",
+        );
+        cardFront.focus();
+        return;
+      }
+
+      if (front.length > 200) {
+        showCardFieldFeedback(
+          cardFront,
+          cardFrontFeedback,
+          "A frente do cartão deve ter no máximo 200 caracteres.",
+        );
+        cardFront.focus();
+        return;
+      }
+
+      if (!back) {
+        showCardFieldFeedback(
+          cardBack,
+          cardBackFeedback,
+          "Preencha o verso do cartão.",
+        );
+        cardBack.focus();
+        return;
+      }
+
+      if (back.length > 400) {
+        showCardFieldFeedback(
+          cardBack,
+          cardBackFeedback,
+          "O verso do cartão deve ter no máximo 400 caracteres.",
+        );
+        cardBack.focus();
+        return;
+      }
+
+      if (notes.length > 300) {
+        showCardFieldFeedback(
+          cardNotes,
+          cardNotesFeedback,
+          "As notas devem ter no máximo 300 caracteres.",
+        );
+        cardNotes.focus();
         return;
       }
 
