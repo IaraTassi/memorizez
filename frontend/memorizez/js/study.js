@@ -262,11 +262,32 @@ function renderCompletion() {
   description.textContent =
     "Você concluiu todos os cartões disponíveis desta sessão.";
 
-  const backButton = createButton("Voltar à revisão", "button-primary", () => {
-    window.location.href = "review.html";
+  const actions = document.createElement("div");
+  actions.className = "study-completion-actions";
+
+  const freeStudyButton = createButton("Estudo Livre", "button-primary", () => {
+    window.location.href = "free-study.html";
   });
 
-  completion.append(title, description, backButton);
+  const homeButton = createButton(
+    "Voltar para Home",
+    "button-secondary",
+    () => {
+      window.location.href = "collections.html";
+    },
+  );
+
+  const reviewButton = createButton(
+    "Voltar para Revisão",
+    "button-secondary",
+    () => {
+      window.location.href = "review.html";
+    },
+  );
+
+  actions.append(freeStudyButton, homeButton, reviewButton);
+
+  completion.append(title, description, actions);
   studyContent.append(completion);
 
   showMessage("");

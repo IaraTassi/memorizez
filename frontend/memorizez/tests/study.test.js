@@ -913,10 +913,18 @@ describe("Study", () => {
     document.querySelector(".button-primary").click();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    const backButton = document.querySelector(".study-completion button");
+    const completionButtons = document.querySelectorAll(
+      ".study-completion-actions button",
+    );
 
-    expect(backButton).not.toBeNull();
-    expect(backButton.textContent).toBe("Voltar à revisão");
-    expect(backButton.disabled).toBe(false);
+    expect(completionButtons).toHaveLength(3);
+
+    expect(completionButtons[0].textContent).toBe("Estudo Livre");
+    expect(completionButtons[1].textContent).toBe("Voltar para Home");
+    expect(completionButtons[2].textContent).toBe("Voltar para Revisão");
+
+    completionButtons.forEach((button) => {
+      expect(button.disabled).toBe(false);
+    });
   });
 });
