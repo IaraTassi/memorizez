@@ -5,12 +5,12 @@ import com.memorizez.memorizez.exception.GlobalExceptionHandler;
 import com.memorizez.memorizez.user.dto.LoginRequest;
 import com.memorizez.memorizez.user.dto.RegisterUserRequest;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
+import com.memorizez.memorizez.user.service.JwtService;
 import com.memorizez.memorizez.user.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.ObjectMapper;
@@ -24,10 +24,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class UserControllerTest {
 
     private final AuthenticationManager authenticationManager = mock(AuthenticationManager.class);
-    private final SecurityContextRepository securityContextRepository = mock(SecurityContextRepository.class);
     private final UserService userService = mock(UserService.class);
+    private final JwtService jwtService = mock(JwtService.class);
 
-    private final UserController userController = new UserController(userService, authenticationManager, securityContextRepository);
+    private final UserController userController = new UserController(userService, authenticationManager, jwtService);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final MockMvc mockMvc = MockMvcBuilders
             .standaloneSetup(userController)
@@ -55,7 +55,7 @@ public class UserControllerTest {
 
         verifyNoInteractions(
                 authenticationManager,
-                securityContextRepository
+                jwtService
         );
     }
 
@@ -78,7 +78,7 @@ public class UserControllerTest {
         verifyNoInteractions(
                 userService,
                 authenticationManager,
-                securityContextRepository
+                jwtService
         );
     }
 
@@ -103,7 +103,7 @@ public class UserControllerTest {
 
         verifyNoInteractions(
                 authenticationManager,
-                securityContextRepository
+                jwtService
         );
     }
 
@@ -126,7 +126,7 @@ public class UserControllerTest {
         verifyNoInteractions(
                 userService,
                 authenticationManager,
-                securityContextRepository
+                jwtService
         );
     }
 
@@ -147,9 +147,8 @@ public class UserControllerTest {
                 .andExpect(status().isOk());
 
         verify(authenticationManager).authenticate(any());
-        verify(securityContextRepository).saveContext(
-                any(),any(),any()
-        );
+        verify(jwtService).generateToken(authentication);
+        verifyNoInteractions(userService);
 
     }
 
@@ -175,7 +174,7 @@ public class UserControllerTest {
 
         verifyNoInteractions(
                 userService,
-                securityContextRepository
+                jwtService
         );
     }
 
@@ -196,7 +195,7 @@ public class UserControllerTest {
 
         verifyNoInteractions(
                 authenticationManager,
-                securityContextRepository
+                jwtService
         );
     }
 
@@ -220,7 +219,7 @@ public class UserControllerTest {
 
         verifyNoInteractions(
                 authenticationManager,
-                securityContextRepository
+                jwtService
         );
     }
 }

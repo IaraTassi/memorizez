@@ -35,13 +35,12 @@ public class CorsConfig {
                 List.of(
                         "Content-Type",
                         "Accept",
-                        "X-CSRF-TOKEN",
                         "Authorization",
                         "X-Requested-With"
                 )
         );
 
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =

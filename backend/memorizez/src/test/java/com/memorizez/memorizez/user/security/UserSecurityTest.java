@@ -4,10 +4,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.logout;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -18,11 +17,25 @@ class UserSecurityTest {
     private MockMvc mockMvc;
 
     @Test
-    @WithMockUser(username = "test@memorizez.com", roles = "USER")
-    void shouldLogoutSuccessfully() throws Exception {
+    void shouldReturnUnauthorizedWhenAccessingProtectedEndpointWithoutToken()
+            throws Exception {
 
-        mockMvc.perform(logout())
-                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/users/me"))
+                .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void shouldReturnUnauthorizedWhenAccessingProtectedEndpointWithInvalidToken()
+            throws Exception {
+
+        mockMvc.perform(
+                        get("/users/me")
+                                .header(
+                                        "Authorization",
+                                        "Bearer invalid.jwt.token"
+                                )
+                )
+                .andExpect(status().isUnauthorized());
+    }
 }
+

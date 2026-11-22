@@ -91,6 +91,10 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>3.0.3</version>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -149,15 +153,15 @@
                       <configuration>
                       <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
                       <resources>
-   										 <resource>
-        									<directory>${project.basedir}/../../frontend/memorizez</directory>
-        									<filtering>false</filtering>
-        									<excludes>
-            								<exclude>node_modules/**</exclude>
-            								<exclude>tests/**</exclude>
-        									</excludes>
-    										</resource>
-											</resources>
+   						 <resource>
+							 <directory>${project.basedir}/../../frontend/memorizez</directory>
+							 <filtering>false</filtering>
+							 <excludes>
+            				 	<exclude>node_modules/**</exclude>
+            				 	<exclude>tests/**</exclude>
+        					 </excludes>
+    					 </resource>
+					  </resources>
             </configuration>
           </execution>
         </executions>
