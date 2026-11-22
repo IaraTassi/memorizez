@@ -1,9 +1,15 @@
+
 describe('FreeStudy', () => {
 
     let user;
+    let token;
     let collectionId;
     let cardId;
     let collectionName;
+
+    const authHeaders = () => ({
+        Authorization: `Bearer ${token}`
+    });
 
     beforeEach(() => {
         user = {
@@ -15,106 +21,101 @@ describe('FreeStudy', () => {
 
         collectionName = `Java FreeStudy ${Date.now()}`;
 
-        return cy.request('GET', '/csrf')
-            .then((csrfResponse) => cy.request({
-                method: 'POST',
-                url: '/users',
-                headers: {'X-CSRF-TOKEN': csrfResponse.body.token},
-                body: user
-            }))
-            .then((registerResponse) => {
-                expect(registerResponse.status).to.equal(201);
-                return cy.request('GET', '/csrf');
-            })
-            .then((csrfResponse) => cy.request({
+        return cy.request({
+            method: 'POST',
+            url: '/users',
+            body: user
+        }).then((registerResponse) => {
+            expect(registerResponse.status).to.equal(201);
+
+            return cy.request({
                 method: 'POST',
                 url: '/users/login',
-                headers: {'X-CSRF-TOKEN': csrfResponse.body.token},
                 body: {
                     email: user.email,
                     password: user.password
                 }
-            }))
-            .then((loginResponse) => {
-                expect(loginResponse.status).to.equal(200);
-                return cy.request('GET', '/csrf');
-            })
-            .then((csrfResponse) => cy.request({
+            });
+        }).then((loginResponse) => {
+            expect(loginResponse.status).to.equal(200);
+            expect(loginResponse.body.token).to.be.a('string').and.not.be.empty;
+
+            token = loginResponse.body.token;
+
+            return cy.request({
                 method: 'POST',
                 url: '/collections',
-                headers: {'X-CSRF-TOKEN': csrfResponse.body.token},
-                body: {name: collectionName}
-            }))
-            .then((collectionResponse) => {
-                expect(collectionResponse.status).to.equal(201);
+                headers: authHeaders(),
+                body: {
+                    name: collectionName
+                }
+            });
+        }).then((collectionResponse) => {
+            expect(collectionResponse.status).to.equal(201);
 
-                return cy.request({
-                    method: 'GET',
-                    url: '/collections'
-                });
-            })
-            .then((collectionsResponse) => {
-                expect(collectionsResponse.status).to.equal(200);
+            return cy.request({
+                method: 'GET',
+                url: '/collections',
+                headers: authHeaders()
+            });
+        }).then((collectionsResponse) => {
+            expect(collectionsResponse.status).to.equal(200);
 
-                const collection = collectionsResponse.body.find(
-                    (item) => item.name === collectionName
-                );
+            const collection = collectionsResponse.body.find(
+                (item) => item.name === collectionName
+            );
 
-                expect(collection).to.exist;
-                collectionId = collection.id;
+            expect(collection).to.exist;
+            collectionId = collection.id;
 
-                return cy.request('GET', '/csrf');
-            })
-            .then((csrfResponse) => cy.request({
+            return cy.request({
                 method: 'POST',
                 url: `/collections/${collectionId}/cards`,
-                headers: {'X-CSRF-TOKEN': csrfResponse.body.token},
+                headers: authHeaders(),
                 body: {
                     front: 'What is Java?',
                     back: 'A programming language.',
                     notes: 'FreeStudy E2E test'
                 }
-            }))
-            .then((firstCardResponse) => {
-                expect(firstCardResponse.status).to.equal(201);
+            });
+        }).then((firstCardResponse) => {
+            expect(firstCardResponse.status).to.equal(201);
 
-                return cy.request({
-                    method: 'GET',
-                    url: `/collections/${collectionId}/cards`
-                });
-            })
-            .then((cardsResponse) => {
-                expect(cardsResponse.status).to.equal(200);
+            return cy.request({
+                method: 'GET',
+                url: `/collections/${collectionId}/cards`,
+                headers: authHeaders()
+            });
+        }).then((cardsResponse) => {
+            expect(cardsResponse.status).to.equal(200);
 
-                const firstCard = cardsResponse.body.content.find(
-                    (item) => item.front === 'What is Java?'
-                );
+            const firstCard = cardsResponse.body.content.find(
+                (item) => item.front === 'What is Java?'
+            );
 
-                expect(firstCard).to.exist;
-                cardId = firstCard.id;
+            expect(firstCard).to.exist;
+            cardId = firstCard.id;
 
-                return cy.request('GET', '/csrf');
-            })
-            .then((csrfResponse) => cy.request({
+            return cy.request({
                 method: 'POST',
                 url: `/collections/${collectionId}/cards`,
-                headers: {'X-CSRF-TOKEN': csrfResponse.body.token},
+                headers: authHeaders(),
                 body: {
                     front: 'What is Spring?',
                     back: 'A Java framework.',
                     notes: 'Second FreeStudy E2E test'
                 }
-            }))
-            .then((secondCardResponse) => {
-                expect(secondCardResponse.status).to.equal(201);
             });
+        }).then((secondCardResponse) => {
+            expect(secondCardResponse.status).to.equal(201);
+        });
     });
 
     it('should find collections available for free study', () => {
-
         return cy.request({
             method: 'GET',
-            url: '/free-study/collections'
+            url: '/free-study/collections',
+            headers: authHeaders()
         }).then((response) => {
             expect(response.status).to.equal(200);
 
@@ -132,7 +133,8 @@ describe('FreeStudy', () => {
     it('should find the first card for free study', () => {
         return cy.request({
             method: 'GET',
-            url: `/free-study/collections/${collectionId}`
+            url: `/free-study/collections/${collectionId}`,
+            headers: authHeaders()
         }).then((response) => {
             expect(response.status).to.equal(200);
             expect(response.body.cardId).to.equal(cardId);
@@ -141,12 +143,14 @@ describe('FreeStudy', () => {
             expect(response.body.back).to.be.null;
             expect(response.body.notes).to.be.null;
         });
+
     });
 
     it('should reveal the back of a card for free study', () => {
         return cy.request({
             method: 'GET',
-            url: `/free-study/collections/${collectionId}/cards/${cardId}/back`
+            url: `/free-study/collections/${collectionId}/cards/${cardId}/back`,
+            headers: authHeaders()
         }).then((response) => {
             expect(response.status).to.equal(200);
             expect(response.body.cardId).to.equal(cardId);
@@ -155,24 +159,28 @@ describe('FreeStudy', () => {
             expect(response.body.back).to.equal('A programming language.');
             expect(response.body.notes).to.equal('FreeStudy E2E test');
         });
+
     });
 
     it('should move to the next card for free study', () => {
         return cy.request({
             method: 'GET',
-            url: `/free-study/collections/${collectionId}/cards/${cardId}`
+            url: `/free-study/collections/${collectionId}/cards/${cardId}`,
+            headers: authHeaders()
         }).then((response) => {
             expect(response.status).to.equal(200);
             expect(response.body.front).to.equal('What is Spring?');
             expect(response.body.back).to.be.null;
             expect(response.body.notes).to.be.null;
         });
+
     });
 
     it('should return no content when there is no next card', () => {
         return cy.request({
             method: 'GET',
-            url: `/free-study/collections/${collectionId}/cards/${cardId}`
+            url: `/free-study/collections/${collectionId}/cards/${cardId}`,
+            headers: authHeaders()
         }).then((response) => {
             expect(response.status).to.equal(200);
             expect(response.body.front).to.equal('What is Spring?');
@@ -182,6 +190,7 @@ describe('FreeStudy', () => {
             return cy.request({
                 method: 'GET',
                 url: `/free-study/collections/${collectionId}/cards/${nextCardId}`,
+                headers: authHeaders(),
                 failOnStatusCode: false
             });
         }).then((nextResponse) => {
@@ -193,37 +202,38 @@ describe('FreeStudy', () => {
     it('should return no content when the collection has no cards', () => {
         const emptyCollectionName = `Empty FreeStudy ${Date.now()}`;
 
-        return cy.request('GET', '/csrf')
-            .then((csrfResponse) => cy.request({
-                method: 'POST',
+        return cy.request({
+            method: 'POST',
+            url: '/collections',
+            headers: authHeaders(),
+            body: {
+                name: emptyCollectionName
+            }
+        }).then((createResponse) => {
+            expect(createResponse.status).to.equal(201);
+
+            return cy.request({
+                method: 'GET',
                 url: '/collections',
-                headers: {'X-CSRF-TOKEN': csrfResponse.body.token},
-                body: {name: emptyCollectionName}
-            }))
-            .then((createResponse) => {
-                expect(createResponse.status).to.equal(201);
-
-                return cy.request({
-                    method: 'GET',
-                    url: '/collections'
-                });
-            })
-            .then((collectionsResponse) => {
-                const collection = collectionsResponse.body.find(
-                    (item) => item.name === emptyCollectionName
-                );
-
-                expect(collection).to.exist;
-
-                return cy.request({
-                    method: 'GET',
-                    url: `/free-study/collections/${collection.id}`,
-                    failOnStatusCode: false
-                });
-            })
-            .then((studyResponse) => {
-                expect(studyResponse.status).to.equal(204);
+                headers: authHeaders()
             });
+        }).then((collectionsResponse) => {
+            const collection = collectionsResponse.body.find(
+                (item) => item.name === emptyCollectionName
+            );
+
+            expect(collection).to.exist;
+
+            return cy.request({
+                method: 'GET',
+                url: `/free-study/collections/${collection.id}`,
+                headers: authHeaders(),
+                failOnStatusCode: false
+            });
+        }).then((studyResponse) => {
+            expect(studyResponse.status).to.equal(204);
+        });
+
     });
 
     it('should not allow access to another user collection', () => {
@@ -234,115 +244,118 @@ describe('FreeStudy', () => {
             confirmPassword: 'password123'
         };
 
-        return cy.request('GET', '/csrf')
-            .then((csrfResponse) => cy.request({
-                method: 'POST',
-                url: '/users',
-                headers: {'X-CSRF-TOKEN': csrfResponse.body.token},
-                body: anotherUser
-            }))
-            .then((registerResponse) => {
-                expect(registerResponse.status).to.equal(201);
-                return cy.request('GET', '/csrf');
-            })
-            .then((csrfResponse) => cy.request({
+        let anotherUserToken;
+
+        return cy.request({
+            method: 'POST',
+            url: '/users',
+            body: anotherUser
+        }).then((registerResponse) => {
+            expect(registerResponse.status).to.equal(201);
+
+            return cy.request({
                 method: 'POST',
                 url: '/users/login',
-                headers: {'X-CSRF-TOKEN': csrfResponse.body.token},
                 body: {
                     email: anotherUser.email,
                     password: anotherUser.password
                 }
-            }))
-            .then((loginResponse) => {
-                expect(loginResponse.status).to.equal(200);
-
-                return cy.request({
-                    method: 'GET',
-                    url: `/free-study/collections/${collectionId}`,
-                    failOnStatusCode: false
-                });
-            })
-            .then((studyResponse) => {
-                expect(studyResponse.status).to.equal(404);
             });
+        }).then((loginResponse) => {
+            expect(loginResponse.status).to.equal(200);
+            expect(loginResponse.body.token).to.be.a('string').and.not.be.empty;
+
+            anotherUserToken = loginResponse.body.token;
+
+            return cy.request({
+                method: 'GET',
+                url: `/free-study/collections/${collectionId}`,
+                headers: {
+                    Authorization: `Bearer ${anotherUserToken}`
+                },
+                failOnStatusCode: false
+            });
+        }).then((studyResponse) => {
+            expect(studyResponse.status).to.equal(404);
+        });
+
     });
 
     it('should not reveal a card that does not belong to the collection', () => {
         const otherCollectionName = `Other FreeStudy Collection ${Date.now()}`;
 
-        return cy.request('GET', '/csrf')
-            .then((csrfResponse) => cy.request({
-                method: 'POST',
+        return cy.request({
+            method: 'POST',
+            url: '/collections',
+            headers: authHeaders(),
+            body: {
+                name: otherCollectionName
+            }
+        }).then((createResponse) => {
+            expect(createResponse.status).to.equal(201);
+
+            return cy.request({
+                method: 'GET',
                 url: '/collections',
-                headers: {'X-CSRF-TOKEN': csrfResponse.body.token},
-                body: {name: otherCollectionName}
-            }))
-            .then((createResponse) => {
-                expect(createResponse.status).to.equal(201);
-
-                return cy.request({
-                    method: 'GET',
-                    url: '/collections'
-                });
-            })
-            .then((collectionsResponse) => {
-                const otherCollection = collectionsResponse.body.find(
-                    (item) => item.name === otherCollectionName
-                );
-
-                expect(otherCollection).to.exist;
-
-                return cy.request({
-                    method: 'GET',
-                    url: `/free-study/collections/${otherCollection.id}/cards/${cardId}/back`,
-                    failOnStatusCode: false
-                });
-            })
-            .then((studyResponse) => {
-                expect(studyResponse.status).to.equal(404);
+                headers: authHeaders()
             });
+        }).then((collectionsResponse) => {
+            const otherCollection = collectionsResponse.body.find(
+                (item) => item.name === otherCollectionName
+            );
+
+            expect(otherCollection).to.exist;
+
+            return cy.request({
+                method: 'GET',
+                url: `/free-study/collections/${otherCollection.id}/cards/${cardId}/back`,
+                headers: authHeaders(),
+                failOnStatusCode: false
+            });
+        }).then((studyResponse) => {
+            expect(studyResponse.status).to.equal(404);
+        });
+
     });
 
     it('should not advance using a card from another collection', () => {
         const otherCollectionName = `Another FreeStudy Collection ${Date.now()}`;
 
-        return cy.request('GET', '/csrf')
-            .then((csrfResponse) => cy.request({
-                method: 'POST',
+        return cy.request({
+            method: 'POST',
+            url: '/collections',
+            headers: authHeaders(),
+            body: {
+                name: otherCollectionName
+            }
+        }).then((createResponse) => {
+            expect(createResponse.status).to.equal(201);
+
+            return cy.request({
+                method: 'GET',
                 url: '/collections',
-                headers: {'X-CSRF-TOKEN': csrfResponse.body.token},
-                body: {name: otherCollectionName}
-            }))
-            .then((createResponse) => {
-                expect(createResponse.status).to.equal(201);
-
-                return cy.request({
-                    method: 'GET',
-                    url: '/collections'
-                });
-            })
-            .then((collectionsResponse) => {
-                const otherCollection = collectionsResponse.body.find(
-                    (item) => item.name === otherCollectionName
-                );
-
-                expect(otherCollection).to.exist;
-
-                return cy.request({
-                    method: 'GET',
-                    url: `/free-study/collections/${otherCollection.id}/cards/${cardId}`,
-                    failOnStatusCode: false
-                });
-            })
-            .then((studyResponse) => {
-                expect(studyResponse.status).to.equal(404);
+                headers: authHeaders()
             });
+        }).then((collectionsResponse) => {
+            const otherCollection = collectionsResponse.body.find(
+                (item) => item.name === otherCollectionName
+            );
+
+            expect(otherCollection).to.exist;
+
+            return cy.request({
+                method: 'GET',
+                url: `/free-study/collections/${otherCollection.id}/cards/${cardId}`,
+                headers: authHeaders(),
+                failOnStatusCode: false
+            });
+        }).then((studyResponse) => {
+            expect(studyResponse.status).to.equal(404);
+        });
+
     });
 
     it('should not allow access without authentication', () => {
-        cy.clearCookie('JSESSIONID');
-
         return cy.request({
             method: 'GET',
             url: '/free-study/collections',
@@ -350,11 +363,10 @@ describe('FreeStudy', () => {
         }).then((response) => {
             expect(response.status).to.equal(401);
         });
+
     });
 
     it('should not allow access to study endpoints without authentication', () => {
-        cy.clearCookie('JSESSIONID');
-
         const endpoints = [
             `/free-study/collections/${collectionId}`,
             `/free-study/collections/${collectionId}/cards/${cardId}/back`,
@@ -370,6 +382,7 @@ describe('FreeStudy', () => {
                 expect(response.status).to.equal(401);
             });
         });
+
     });
 
 });

@@ -5,61 +5,43 @@ describe('Authentication', () => {
     describe('register', () => {
 
         it('should register a user successfully', () => {
+            cy.request({
+                method: 'POST',
+                url: '/users',
+                body: {
+                    name: 'Test User',
+                    email: email,
+                    password: 'password123',
+                    confirmPassword: 'password123'
+                }
+            }).then((response) => {
 
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
+                expect(response.status).to.equal(201);
 
-                cy.request({
-                    method: 'POST',
-                    url: '/users',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: {
-                        name: 'Test User',
-                        email: email,
-                        password: 'password123',
-                        confirmPassword: 'password123'
-                    }
-                }).then((response) => {
-
-                    expect(response.status).to.equal(201);
-
-                });
             });
 
         });
 
         it('should not register a user with an empty name', () => {
+            cy.request({
+                method: 'POST',
+                url: '/users',
+                body: {
+                    name: '',
+                    email: email,
+                    password: 'password123',
+                    confirmPassword: 'password123'
+                },
+                failOnStatusCode: false
+            }).then((response) => {
 
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
-
-                cy.request({
-                    method: 'POST',
-                    url: '/users',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: {
-                        name: '',
-                        email: email,
-                        password: 'password123',
-                        confirmPassword: 'password123'
-                    },
-                    failOnStatusCode: false
-                }).then((response) => {
-
-                    expect(response.status).to.equal(400);
-
-                });
+                expect(response.status).to.equal(400);
 
             });
 
         });
 
         it('should not register a user with an existing email', () => {
-
             const user = {
                 name: 'Test User',
                 email: `e2e-duplicate-${Date.now()}@memorizez.com`,
@@ -67,33 +49,22 @@ describe('Authentication', () => {
                 confirmPassword: 'password123'
             };
 
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
+            cy.request({
+                method: 'POST',
+                url: '/users',
+                body: user
+            }).then((response) => {
+
+                expect(response.status).to.equal(201);
 
                 cy.request({
                     method: 'POST',
                     url: '/users',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: user
-                }).then((response) => {
+                    body: user,
+                    failOnStatusCode: false
+                }).then((duplicateResponse) => {
 
-                    expect(response.status).to.equal(201);
-
-                    cy.request({
-                        method: 'POST',
-                        url: '/users',
-                        body: user,
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken
-                        },
-                        failOnStatusCode: false
-                    }).then((response) => {
-
-                        expect(response.status).to.equal(409);
-
-                    });
+                    expect(duplicateResponse.status).to.equal(409);
 
                 });
 
@@ -102,28 +73,19 @@ describe('Authentication', () => {
         });
 
         it('should not register a user when passwords do not match', () => {
+            cy.request({
+                method: 'POST',
+                url: '/users',
+                body: {
+                    name: 'Test User',
+                    email: 'e2e-password-error@memorizez.com',
+                    password: 'password123',
+                    confirmPassword: 'different123'
+                },
+                failOnStatusCode: false
+            }).then((response) => {
 
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
-
-                cy.request({
-                    method: 'POST',
-                    url: '/users',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: {
-                        name: 'Test User',
-                        email: 'e2e-password-error@memorizez.com',
-                        password: 'password123',
-                        confirmPassword: 'different123'
-                    },
-                    failOnStatusCode: false
-                }).then((response) => {
-
-                    expect(response.status).to.equal(400);
-
-                });
+                expect(response.status).to.equal(400);
 
             });
 
@@ -137,18 +99,16 @@ describe('Authentication', () => {
                 confirmPassword: 'password123'
             };
 
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                return cy.request({
-                    method: 'POST',
-                    url: '/users',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfResponse.body.token
-                    },
-                    body: user
-                });
+            cy.request({
+                method: 'POST',
+                url: '/users',
+                body: user
             }).then((response) => {
+
                 expect(response.status).to.equal(201);
+
             });
+
         });
 
         it('should not register a user with a name longer than 100 characters', () => {
@@ -159,19 +119,17 @@ describe('Authentication', () => {
                 confirmPassword: 'password123'
             };
 
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                return cy.request({
-                    method: 'POST',
-                    url: '/users',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfResponse.body.token
-                    },
-                    body: user,
-                    failOnStatusCode: false
-                });
+            cy.request({
+                method: 'POST',
+                url: '/users',
+                body: user,
+                failOnStatusCode: false
             }).then((response) => {
+
                 expect(response.status).to.equal(400);
+
             });
+
         });
 
     });
@@ -179,7 +137,6 @@ describe('Authentication', () => {
     describe('login', () => {
 
         it('should login successfully', () => {
-
             const user = {
                 name: 'Login User',
                 email: `e2e-login-${Date.now()}@memorizez.com`,
@@ -187,35 +144,27 @@ describe('Authentication', () => {
                 confirmPassword: 'password123'
             };
 
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
+            cy.request({
+                method: 'POST',
+                url: '/users',
+                body: user
+            }).then((registerResponse) => {
+
+                expect(registerResponse.status).to.equal(201);
 
                 cy.request({
                     method: 'POST',
-                    url: '/users',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: user
-                }).then((registerResponse) => {
+                    url: '/users/login',
+                    body: {
+                        email: user.email,
+                        password: user.password
+                    }
+                }).then((loginResponse) => {
 
-                    expect(registerResponse.status).to.equal(201);
-
-                    cy.request({
-                        method: 'POST',
-                        url: '/users/login',
-                        headers: {
-                            'X-CSRF-TOKEN': csrfToken
-                        },
-                        body: {
-                            email: user.email,
-                            password: user.password
-                        }
-                    }).then((loginResponse) => {
-
-                        expect(loginResponse.status).to.equal(200);
-
-                    });
+                    expect(loginResponse.status).to.equal(200);
+                    expect(loginResponse.body.token).to.be.a('string').and.not.be.empty;
+                    expect(loginResponse.body.tokenType).to.equal('Bearer');
+                    expect(loginResponse.body.expiresAt).to.be.a('string');
 
                 });
 
@@ -224,7 +173,6 @@ describe('Authentication', () => {
         });
 
         it('should not login with an incorrect password', () => {
-
             const user = {
                 name: 'Login User',
                 email: `e2e-wrong-password-${Date.now()}@memorizez.com`,
@@ -232,34 +180,105 @@ describe('Authentication', () => {
                 confirmPassword: 'password123'
             };
 
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
+            cy.request({
+                method: 'POST',
+                url: '/users',
+                body: user
+            }).then((registerResponse) => {
+
+                expect(registerResponse.status).to.equal(201);
 
                 cy.request({
                     method: 'POST',
-                    url: '/users',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
+                    url: '/users/login',
+                    body: {
+                        email: user.email,
+                        password: 'wrong-password'
                     },
-                    body: user
-                }).then((registerResponse) => {
+                    failOnStatusCode: false
+                }).then((loginResponse) => {
 
-                    expect(registerResponse.status).to.equal(201);
+                    expect(loginResponse.status).to.equal(401);
+
+                });
+
+            });
+
+        });
+
+        it('should not login with a non-existing email', () => {
+            cy.request({
+                method: 'POST',
+                url: '/users/login',
+                body: {
+                    email: `e2e-non-existing-${Date.now()}@memorizez.com`,
+                    password: 'password123'
+                },
+                failOnStatusCode: false
+            }).then((response) => {
+
+                expect(response.status).to.equal(401);
+
+            });
+
+        });
+
+        it('should not login with an invalid email', () => {
+            cy.request({
+                method: 'POST',
+                url: '/users/login',
+                body: {
+                    email: 'invalid-email',
+                    password: 'password123'
+                },
+                failOnStatusCode: false
+            }).then((response) => {
+
+                expect(response.status).to.equal(400);
+
+            });
+
+        });
+
+        it('should access protected endpoints with a valid token', () => {
+            const user = {
+                name: 'Protected User',
+                email: `e2e-protected-${Date.now()}@memorizez.com`,
+                password: 'password123',
+                confirmPassword: 'password123'
+            };
+
+            cy.request({
+                method: 'POST',
+                url: '/users',
+                body: user
+            }).then((registerResponse) => {
+
+                expect(registerResponse.status).to.equal(201);
+
+                cy.request({
+                    method: 'POST',
+                    url: '/users/login',
+                    body: {
+                        email: user.email,
+                        password: user.password
+                    }
+                }).then((loginResponse) => {
+
+                    expect(loginResponse.status).to.equal(200);
+
+                    const token = loginResponse.body.token;
 
                     cy.request({
-                        method: 'POST',
-                        url: '/users/login',
+                        method: 'GET',
+                        url: '/users/me',
                         headers: {
-                            'X-CSRF-TOKEN': csrfToken
-                        },
-                        body: {
-                            email: user.email,
-                            password: 'wrong-password'
-                        },
-                        failOnStatusCode: false
-                    }).then((loginResponse) => {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }).then((profileResponse) => {
 
-                        expect(loginResponse.status).to.equal(401);
+                        expect(profileResponse.status).to.equal(200);
+                        expect(profileResponse.body.email).to.equal(user.email);
 
                     });
 
@@ -269,60 +288,7 @@ describe('Authentication', () => {
 
         });
 
-        it('should not login with a non-existing email', () => {
-
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
-
-                cy.request({
-                    method: 'POST',
-                    url: '/users/login',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: {
-                        email: `e2e-non-existing-${Date.now()}@memorizez.com`,
-                        password: 'password123'
-                    },
-                    failOnStatusCode: false
-                }).then((response) => {
-
-                    expect(response.status).to.equal(401);
-
-                });
-
-            });
-
-        });
-
-        it('should not login with an invalid email', () => {
-
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
-
-                cy.request({
-                    method: 'POST',
-                    url: '/users/login',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: {
-                        email: 'invalid-email',
-                        password: 'password123'
-                    },
-                    failOnStatusCode: false
-                }).then((response) => {
-
-                    expect(response.status).to.equal(400);
-
-                });
-
-            });
-
-        });
-
         it('should delete the authenticated user', () => {
-
             const user = {
                 name: 'Delete User',
                 email: `e2e-delete-${Date.now()}@memorizez.com`,
@@ -330,47 +296,36 @@ describe('Authentication', () => {
                 confirmPassword: 'password123'
             };
 
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
+            cy.request({
+                method: 'POST',
+                url: '/users',
+                body: user
+            }).then((registerResponse) => {
+
+                expect(registerResponse.status).to.equal(201);
 
                 cy.request({
                     method: 'POST',
-                    url: '/users',
-                    headers: {'X-CSRF-TOKEN': csrfToken},
-                    body: user
-                }).then((registerResponse) => {
+                    url: '/users/login',
+                    body: {
+                        email: user.email,
+                        password: user.password
+                    }
+                }).then((loginResponse) => {
 
-                    expect(registerResponse.status).to.equal(201);
+                    expect(loginResponse.status).to.equal(200);
+
+                    const token = loginResponse.body.token;
 
                     cy.request({
-                        method: 'POST',
-                        url: '/users/login',
-                        headers: {'X-CSRF-TOKEN': csrfToken},
-                        body: {
-                            email: user.email,
-                            password: user.password
+                        method: 'DELETE',
+                        url: '/users',
+                        headers: {
+                            Authorization: `Bearer ${token}`
                         }
-                    }).then((loginResponse) => {
+                    }).then((deleteResponse) => {
 
-                        expect(loginResponse.status).to.equal(200);
-
-                        cy.request('GET', '/csrf').then((newCsrfResponse) => {
-                            const newCsrfToken = newCsrfResponse.body.token;
-
-                            cy.request({
-                                method: 'DELETE',
-                                url: '/users',
-                                headers: {
-                                    'X-CSRF-TOKEN': newCsrfToken
-                                },
-                                failOnStatusCode: false
-                            }).then((deleteResponse) => {
-
-                                expect(deleteResponse.status).to.equal(204);
-
-                            });
-
-                        });
+                        expect(deleteResponse.status).to.equal(204);
 
                     });
 
@@ -381,28 +336,19 @@ describe('Authentication', () => {
         });
 
         it('should not delete a user when not authenticated', () => {
+            cy.request({
+                method: 'DELETE',
+                url: '/users',
+                failOnStatusCode: false
+            }).then((response) => {
 
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
-
-                cy.request({
-                    method: 'DELETE',
-                    url: '/users',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    failOnStatusCode: false
-                }).then((response) => {
-
-                    expect(response.status).to.equal(401);
-                });
+                expect(response.status).to.equal(401);
 
             });
 
         });
 
         it('should not login after deleting the user', () => {
-
             const user = {
                 name: 'Deleted User',
                 email: `e2e-deleted-${Date.now()}@memorizez.com`,
@@ -410,62 +356,48 @@ describe('Authentication', () => {
                 confirmPassword: 'password123'
             };
 
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
+            cy.request({
+                method: 'POST',
+                url: '/users',
+                body: user
+            }).then((registerResponse) => {
+
+                expect(registerResponse.status).to.equal(201);
 
                 cy.request({
                     method: 'POST',
-                    url: '/users',
-                    headers: {'X-CSRF-TOKEN': csrfToken},
-                    body: user
-                }).then((registerResponse) => {
+                    url: '/users/login',
+                    body: {
+                        email: user.email,
+                        password: user.password
+                    }
+                }).then((loginResponse) => {
 
-                    expect(registerResponse.status).to.equal(201);
+                    expect(loginResponse.status).to.equal(200);
+
+                    const token = loginResponse.body.token;
 
                     cy.request({
-                        method: 'POST',
-                        url: '/users/login',
-                        headers: {'X-CSRF-TOKEN': csrfToken},
-                        body: {
-                            email: user.email,
-                            password: user.password
+                        method: 'DELETE',
+                        url: '/users',
+                        headers: {
+                            Authorization: `Bearer ${token}`
                         }
-                    }).then((loginResponse) => {
+                    }).then((deleteResponse) => {
 
-                        expect(loginResponse.status).to.equal(200);
+                        expect(deleteResponse.status).to.equal(204);
 
-                        cy.request('GET', '/csrf').then((newCsrfResponse) => {
-                            const newCsrfToken = newCsrfResponse.body.token;
+                        cy.request({
+                            method: 'POST',
+                            url: '/users/login',
+                            body: {
+                                email: user.email,
+                                password: user.password
+                            },
+                            failOnStatusCode: false
+                        }).then((response) => {
 
-                            cy.request({
-                                method: 'DELETE',
-                                url: '/users',
-                                headers: {'X-CSRF-TOKEN': newCsrfToken}
-                            }).then((deleteResponse) => {
-
-                                expect(deleteResponse.status).to.equal(204);
-
-                                cy.request('GET', '/csrf').then((finalCsrfResponse) => {
-                                    cy.request({
-                                        method: 'POST',
-                                        url: '/users/login',
-                                        headers: {
-                                            'X-CSRF-TOKEN': finalCsrfResponse.body.token
-                                        },
-                                        body: {
-                                            email: user.email,
-                                            password: user.password
-                                        },
-                                        failOnStatusCode: false
-                                    }).then((response) => {
-
-                                        expect(response.status).to.equal(401);
-
-                                    });
-
-                                });
-
-                            });
+                            expect(response.status).to.equal(401);
 
                         });
 
@@ -474,129 +406,6 @@ describe('Authentication', () => {
                 });
 
             });
-
-        });
-
-        it('should logout the authenticated user', () => {
-
-            const user = {
-                name: 'Logout User',
-                email: `e2e-logout-${Date.now()}@memorizez.com`,
-                password: 'password123',
-                confirmPassword: 'password123'
-            };
-
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
-
-                cy.request({
-                    method: 'POST',
-                    url: '/users',
-                    headers: {'X-CSRF-TOKEN': csrfToken},
-                    body: user
-                }).then((registerResponse) => {
-
-                    expect(registerResponse.status).to.equal(201);
-
-                    cy.request({
-                        method: 'POST',
-                        url: '/users/login',
-                        headers: {'X-CSRF-TOKEN': csrfToken},
-                        body: {
-                            email: user.email,
-                            password: user.password
-                        }
-                    }).then((loginResponse) => {
-
-                        expect(loginResponse.status).to.equal(200);
-
-                        cy.request('GET', '/csrf').then((newCsrfResponse) => {
-                            cy.request({
-                                method: 'POST',
-                                url: '/logout',
-                                headers: {
-                                    'X-CSRF-TOKEN': newCsrfResponse.body.token
-                                }
-                            }).then((logoutResponse) => {
-
-                                expect(logoutResponse.status).to.equal(204);
-
-                            });
-
-                        });
-
-                    });
-
-                });
-
-            });
-
-        });
-
-        it('should not access protected endpoints after logout', () => {
-
-            const user = {
-                name: 'Logout User',
-                email: `e2e-logout-protected-${Date.now()}@memorizez.com`,
-                password: 'password123',
-                confirmPassword: 'password123'
-            };
-
-            cy.request('GET', '/csrf').then((csrfResponse) => {
-                const csrfToken = csrfResponse.body.token;
-
-                cy.request({
-                    method: 'POST',
-                    url: '/users',
-                    headers: {'X-CSRF-TOKEN': csrfToken},
-                    body: user
-                }).then((registerResponse) => {
-
-                    expect(registerResponse.status).to.equal(201);
-
-                    cy.request({
-                        method: 'POST',
-                        url: '/users/login',
-                        headers: {'X-CSRF-TOKEN': csrfToken},
-                        body: {
-                            email: user.email,
-                            password: user.password
-                        }
-                    }).then((loginResponse) => {
-
-                        expect(loginResponse.status).to.equal(200);
-
-                        cy.request('GET', '/csrf').then((newCsrfResponse) => {
-                            cy.request({
-                                method: 'POST',
-                                url: '/logout',
-                                headers: {
-                                    'X-CSRF-TOKEN': newCsrfResponse.body.token
-                                }
-                            }).then((logoutResponse) => {
-
-                                expect(logoutResponse.status).to.equal(204);
-
-                                cy.request({
-                                    method: 'GET',
-                                    url: '/collections',
-                                    failOnStatusCode: false
-                                }).then((collectionsResponse) => {
-
-                                    expect(collectionsResponse.status).to.equal(401);
-
-                                });
-
-                            });
-
-                        });
-
-                    });
-
-                });
-
-            });
-
         });
 
     });
