@@ -1,4 +1,8 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  if (!window.MemorizezSession?.requireAuthentication()) {
+    return;
+  }
+
   const collectionsContainer = document.querySelector("#review-collections");
 
   if (!collectionsContainer) {
@@ -154,7 +158,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const cards = collections.map(createCollectionCard);
       collectionsContainer.replaceChildren(...cards);
-    } catch {
+    } catch (error) {
+      console.error("Não foi possível carregar as coleções para revisão:", {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
+
       const message = document.createElement("p");
       message.className = "collections-error";
       message.textContent =

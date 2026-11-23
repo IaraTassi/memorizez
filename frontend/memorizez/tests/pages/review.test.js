@@ -1,20 +1,30 @@
 describe("Review", () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   const fs = require("fs");
   const path = require("path");
 
   const reviewHtml = fs.readFileSync(
-    path.resolve(__dirname, "../review.html"),
+    path.resolve(__dirname, "../../review.html"),
     "utf8",
   );
 
   const bodyHtml = reviewHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i)[1];
 
-  async function loadReviewPage(apiResponse = []) {
+  const collections = [
+    {
+      id: "1",
+      name: "Java",
+      createdAt: "2026-10-20T10:30:00",
+      cardCount: 10,
+      availableCardCount: 5,
+    },
+  ];
+
+  async function loadReviewPage(apiResponse = [], authenticated = true) {
     document.body.innerHTML = bodyHtml;
+
+    window.MemorizezSession = {
+      requireAuthentication: jest.fn(() => authenticated),
+    };
 
     global.apiRequest = jest.fn();
 
@@ -29,20 +39,16 @@ describe("Review", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
-  require("../js/review");
+  require("../../js/pages/review");
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
   it("should load the collections successfully", async () => {
-    const collections = [
-      {
-        id: "1",
-        name: "Java",
-        createdAt: "2026-10-20T10:30:00",
-        cardCount: 10,
-        availableCardCount: 5,
-      },
-    ];
-
     await loadReviewPage(collections);
+
+    expect(window.MemorizezSession.requireAuthentication).toHaveBeenCalled();
 
     expect(apiRequest).toHaveBeenCalledWith("/collections");
 
@@ -108,35 +114,39 @@ describe("Review", () => {
   });
 
   it("should show that the collection is up to date when no cards are available", async () => {
-    const collections = [
+    await loadReviewPage([
       {
-        id: "1",
-        name: "Java",
-        createdAt: "2026-10-20T10:30:00",
-        cardCount: 10,
+        ...collections[0],
         availableCardCount: 0,
       },
-    ];
-
-    await loadReviewPage(collections);
+    ]);
 
     expect(document.querySelector(".review-status-text").textContent).toBe(
       "Você está em dia",
     );
   });
 
-  it("should disable the study button when no cards are available", async () => {
-    const collections = [
+  it("should show the available cards count when cards need review", async () => {
+    await loadReviewPage([
       {
-        id: "1",
-        name: "Java",
-        createdAt: "2026-10-20T10:30:00",
-        cardCount: 10,
+        ...collections[0],
+        cardCount: 11,
+        availableCardCount: 2,
+      },
+    ]);
+
+    expect(document.querySelector(".review-status-text").textContent).toBe(
+      "2 de 11 a estudar",
+    );
+  });
+
+  it("should disable the study button when no cards are available", async () => {
+    await loadReviewPage([
+      {
+        ...collections[0],
         availableCardCount: 0,
       },
-    ];
-
-    await loadReviewPage(collections);
+    ]);
 
     const reviewButton = document.querySelector(".review-start-button");
 
@@ -144,16 +154,6 @@ describe("Review", () => {
   });
 
   it("should enable the study button when cards are available", async () => {
-    const collections = [
-      {
-        id: "1",
-        name: "Java",
-        createdAt: "2026-10-20T10:30:00",
-        cardCount: 10,
-        availableCardCount: 5,
-      },
-    ];
-
     await loadReviewPage(collections);
 
     const reviewButton = document.querySelector(".review-start-button");
@@ -162,17 +162,13 @@ describe("Review", () => {
   });
 
   it("should disable the free study button when the collection has no cards", async () => {
-    const collections = [
+    await loadReviewPage([
       {
-        id: "1",
-        name: "Java",
-        createdAt: "2026-10-20T10:30:00",
+        ...collections[0],
         cardCount: 0,
         availableCardCount: 0,
       },
-    ];
-
-    await loadReviewPage(collections);
+    ]);
 
     const freeStudyButton = document.querySelector(".review-free-study-button");
 
@@ -180,20 +176,80 @@ describe("Review", () => {
   });
 
   it("should enable the free study button when the collection has cards", async () => {
-    const collections = [
+    await loadReviewPage([
       {
-        id: "1",
-        name: "Java",
-        createdAt: "2026-10-20T10:30:00",
+        ...collections[0],
         cardCount: 10,
         availableCardCount: 0,
       },
-    ];
-
-    await loadReviewPage(collections);
+    ]);
 
     const freeStudyButton = document.querySelector(".review-free-study-button");
 
     expect(freeStudyButton.disabled).toBe(false);
+  });
+
+  it("should format the collection creation date", async () => {
+    await loadReviewPage(collections);
+
+    expect(document.querySelector(".review-collection-date").textContent).toBe(
+      "Criada em 20/10/2026",
+    );
+  });
+
+  it("should render the collection icon", async () => {
+    await loadReviewPage(collections);
+
+    const icon = document.querySelector(".collection-card-icon");
+
+    expect(icon).not.toBeNull();
+    expect(icon.getAttribute("aria-hidden")).toBe("true");
+    expect(icon.querySelector("svg")).not.toBeNull();
+  });
+
+  it("should render the review status icon", async () => {
+    await loadReviewPage(collections);
+
+    const icon = document.querySelector(".review-status-icon");
+
+    expect(icon).not.toBeNull();
+    expect(icon.getAttribute("aria-hidden")).toBe("true");
+    expect(icon.querySelector("svg")).not.toBeNull();
+  });
+
+  it("should render the study and free study buttons", async () => {
+    await loadReviewPage(collections);
+
+    expect(document.querySelector(".review-start-button").textContent).toBe(
+      "Estudar agora",
+    );
+
+    expect(
+      document.querySelector(".review-free-study-button").textContent,
+    ).toBe("Estudo livre");
+  });
+
+  it("should not load collections when the user is not authenticated", async () => {
+    await loadReviewPage([], false);
+
+    expect(window.MemorizezSession.requireAuthentication).toHaveBeenCalled();
+
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+
+  it("should not render collections when the container does not exist", async () => {
+    document.body.innerHTML = "";
+
+    window.MemorizezSession = {
+      requireAuthentication: jest.fn(() => true),
+    };
+
+    global.apiRequest = jest.fn();
+
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(apiRequest).not.toHaveBeenCalled();
   });
 });

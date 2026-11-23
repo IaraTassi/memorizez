@@ -1,6 +1,9 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  CardModals.render();
+  if (!window.MemorizezSession?.requireAuthentication()) {
+    return;
+  }
 
+  CardModals.render();
   const pageTitle = document.querySelector("#pageTitle");
   const collectionDescription = document.querySelector(
     "#collectionDescription",
@@ -354,19 +357,28 @@ document.addEventListener("DOMContentLoaded", async () => {
           "success",
         );
       } catch (error) {
-        console.error("Não foi possível salvar o cartão:", error);
+        console.error("Não foi possível salvar o cartão:", {
+          status: error?.status ?? null,
+          code: error?.code ?? null,
+          data: error?.data ?? null,
+        });
 
-        if (error.status === 401) {
-          window.location.replace("index.html");
-          return;
+        if (error?.status === 400) {
+          showFeedback(
+            "Não foi possível salvar o cartão. Confira os dados e tente novamente.",
+            "error",
+          );
+        } else if (error?.status === 404) {
+          showFeedback(
+            "A coleção ou o cartão não foi encontrado. Atualize a página e tente novamente.",
+            "error",
+          );
+        } else {
+          showFeedback(
+            "Ocorreu um erro ao salvar o cartão. Tente novamente.",
+            "error",
+          );
         }
-
-        showFeedback(
-          error.status === 400
-            ? "Verifique os campos e tente novamente."
-            : "Não foi possível salvar o cartão. Tente novamente.",
-          "error",
-        );
       } finally {
         saveCardButton.disabled = false;
       }
@@ -410,11 +422,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       showFeedback("Cartão excluído com sucesso.", "success");
     } catch (error) {
       console.error("Não foi possível excluir o cartão:", error);
-
-      if (error.status === 401) {
-        window.location.replace("index.html");
-        return;
-      }
 
       showFeedback(
         "Não foi possível excluir o cartão. Tente novamente.",
@@ -627,11 +634,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (error) {
       console.error("Não foi possível carregar os cartões:", error);
 
-      if (error.status === 401) {
-        window.location.replace("index.html");
-        return;
-      }
-
       showMessage("Não foi possível carregar os cartões.");
 
       showFeedback(
@@ -670,11 +672,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   } catch (error) {
     console.error("Não foi possível carregar a coleção:", error);
-
-    if (error.status === 401) {
-      window.location.replace("index.html");
-      return;
-    }
 
     pageTitle.textContent = "Coleção indisponível";
     collectionDescription.hidden = true;

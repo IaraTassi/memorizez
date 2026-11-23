@@ -3,33 +3,11 @@ describe("Card Details", () => {
   const path = require("path");
 
   const cardDetailsHtml = fs.readFileSync(
-    path.resolve(__dirname, "../card-details.html"),
+    path.resolve(__dirname, "../../card-details.html"),
     "utf8",
   );
 
   const bodyHtml = cardDetailsHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i)[1];
-
-  async function loadCardDetailsPage(
-    apiResponses,
-    search = "?collectionId=1&cardId=10",
-  ) {
-    window.history.replaceState({}, "", `/card-details.html${search}`);
-
-    document.body.innerHTML = bodyHtml;
-
-    global.apiRequest = jest.fn();
-
-    apiResponses.forEach((response) => {
-      global.apiRequest.mockResolvedValueOnce(response);
-    });
-
-    document.dispatchEvent(new Event("DOMContentLoaded"));
-
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-
-  require("../js/card-modals");
-  require("../js/card-details");
 
   const collection = {
     id: "1",
@@ -50,6 +28,49 @@ describe("Card Details", () => {
     totalPages: 1,
   };
 
+  async function loadCardDetailsPage(
+    apiResponses = [],
+    search = "?collectionId=1&cardId=10",
+  ) {
+    window.history.replaceState({}, "", `/card-details.html${search}`);
+
+    document.body.innerHTML = bodyHtml;
+
+    window.MemorizezSession = {
+      requireAuthentication: jest.fn(() => true),
+    };
+
+    global.apiRequest = jest.fn();
+
+    apiResponses.forEach((response) => {
+      global.apiRequest.mockImplementationOnce(() => response);
+    });
+
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  function submitCardForm() {
+    document.querySelector("#card-form").dispatchEvent(
+      new Event("submit", {
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  }
+
+  function openEditModal() {
+    document.querySelector("#editCardButton").click();
+  }
+
+  function openDeleteModal() {
+    document.querySelector("#deleteCardButton").click();
+  }
+
+  require("../../js/components/card-modals");
+  require("../../js/pages/card-details");
+
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -60,12 +81,14 @@ describe("Card Details", () => {
     const fields = document.querySelectorAll(".card-details-field");
 
     expect(apiRequest).toHaveBeenNthCalledWith(1, "/collections");
+
     expect(apiRequest).toHaveBeenNthCalledWith(
       2,
       "/collections/1/cards?page=0&size=100",
     );
 
     expect(document.querySelector("#pageTitle").textContent).toBe("Java");
+
     expect(document.querySelector("#backToCards").getAttribute("href")).toBe(
       "cards.html?collectionId=1",
     );
@@ -82,7 +105,7 @@ describe("Card Details", () => {
     expect(document.querySelector("#cardDetailsActions").hidden).toBe(false);
   });
 
-  it("should show an error when collection does not exist", async () => {
+  it("should show an error when the collection does not exist", async () => {
     await loadCardDetailsPage([[{ id: "2", name: "Spring" }], cardsPage]);
 
     expect(document.querySelector("#pageTitle").textContent).toBe(
@@ -98,10 +121,14 @@ describe("Card Details", () => {
     );
   });
 
-  it("should show an error when card does not exist in the collection", async () => {
+  it("should show an error when the card does not exist in the collection", async () => {
     await loadCardDetailsPage([
       [collection],
-      { content: [], totalElements: 0, totalPages: 0 },
+      {
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+      },
     ]);
 
     expect(document.querySelector("#pageTitle").textContent).toBe(
@@ -113,11 +140,11 @@ describe("Card Details", () => {
     );
   });
 
-  it("should show an error when loading details fails", async () => {
+  it("should show a generic error when loading details fails", async () => {
     const error = new Error("Server error");
     error.status = 500;
 
-    await loadCardDetailsPage([collection, Promise.reject(error)]);
+    await loadCardDetailsPage([[collection], Promise.reject(error)]);
 
     expect(document.querySelector("#pageTitle").textContent).toBe(
       "Detalhes indisponíveis",
@@ -130,8 +157,22 @@ describe("Card Details", () => {
     expect(document.querySelector("#cardDetailsActions")).toBeNull();
   });
 
-  it("should show a message when collectionId or cardId is missing", async () => {
-    await loadCardDetailsPage([], "/card-details.html?collectionId=1");
+  it("should show a message when collectionId is missing", async () => {
+    await loadCardDetailsPage([], "?cardId=10");
+
+    expect(document.querySelector("#pageTitle").textContent).toBe(
+      "Cartão não informado",
+    );
+
+    expect(document.querySelector("#cardDetailsContent").textContent).toContain(
+      "Acesse esta página a partir de uma coleção.",
+    );
+
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
+
+  it("should show a message when cardId is missing", async () => {
+    await loadCardDetailsPage([], "?collectionId=1");
 
     expect(document.querySelector("#pageTitle").textContent).toBe(
       "Cartão não informado",
@@ -147,7 +188,7 @@ describe("Card Details", () => {
   it("should open the edit modal with the current card data", async () => {
     await loadCardDetailsPage([[collection], cardsPage]);
 
-    document.querySelector("#editCardButton").click();
+    openEditModal();
 
     expect(document.querySelector("#card-modal-overlay").hidden).toBe(false);
 
@@ -170,22 +211,114 @@ describe("Card Details", () => {
     );
   });
 
+  it("should close the edit modal using the close button", async () => {
+    await loadCardDetailsPage([[collection], cardsPage]);
+
+    openEditModal();
+
+    document.querySelector("#close-card-form").click();
+
+    expect(document.querySelector("#card-modal-overlay").hidden).toBe(true);
+    expect(document.querySelector("#card-front").value).toBe("");
+    expect(document.querySelector("#card-back").value).toBe("");
+  });
+
+  it("should close the edit modal using the cancel button", async () => {
+    await loadCardDetailsPage([[collection], cardsPage]);
+
+    openEditModal();
+
+    document.querySelector("#cancel-card-form").click();
+
+    expect(document.querySelector("#card-modal-overlay").hidden).toBe(true);
+  });
+
+  it("should close the edit modal when clicking outside it", async () => {
+    await loadCardDetailsPage([[collection], cardsPage]);
+
+    openEditModal();
+
+    document
+      .querySelector("#card-modal-overlay")
+      .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(document.querySelector("#card-modal-overlay").hidden).toBe(true);
+  });
+
+  it("should close the edit modal when pressing Escape", async () => {
+    await loadCardDetailsPage([[collection], cardsPage]);
+
+    openEditModal();
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+
+    expect(document.querySelector("#card-modal-overlay").hidden).toBe(true);
+  });
+
+  it("should open the delete confirmation modal", async () => {
+    await loadCardDetailsPage([[collection], cardsPage]);
+
+    openDeleteModal();
+
+    expect(document.querySelector("#delete-card-overlay").hidden).toBe(false);
+  });
+
+  it("should close the delete modal using the close button", async () => {
+    await loadCardDetailsPage([[collection], cardsPage]);
+
+    openDeleteModal();
+
+    document.querySelector("#close-delete-card").click();
+
+    expect(document.querySelector("#delete-card-overlay").hidden).toBe(true);
+  });
+
+  it("should close the delete modal using the cancel button", async () => {
+    await loadCardDetailsPage([[collection], cardsPage]);
+
+    openDeleteModal();
+
+    document.querySelector("#cancel-delete-card").click();
+
+    expect(document.querySelector("#delete-card-overlay").hidden).toBe(true);
+  });
+
+  it("should close the delete modal when clicking outside it", async () => {
+    await loadCardDetailsPage([[collection], cardsPage]);
+
+    openDeleteModal();
+
+    document
+      .querySelector("#delete-card-overlay")
+      .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(document.querySelector("#delete-card-overlay").hidden).toBe(true);
+  });
+
+  it("should close the delete modal when pressing Escape", async () => {
+    await loadCardDetailsPage([[collection], cardsPage]);
+
+    openDeleteModal();
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+
+    expect(document.querySelector("#delete-card-overlay").hidden).toBe(true);
+  });
+
   it("should not update a card when the front is empty", async () => {
     await loadCardDetailsPage([[collection], cardsPage]);
 
-    document.querySelector("#editCardButton").click();
+    openEditModal();
 
     document.querySelector("#card-front").value = "   ";
     document.querySelector("#card-back").value = "Verso atualizado";
 
-    document
-      .querySelector("#card-form")
-      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    submitCardForm();
 
     expect(apiRequest).toHaveBeenCalledTimes(2);
 
     expect(document.querySelector("#cardDetailsFeedback").textContent).toBe(
-      "Preencha a frente e o verso do cartão.",
+      "Preencha a frente do cartão.",
     );
 
     expect(document.querySelector("#card-modal-overlay").hidden).toBe(false);
@@ -194,22 +327,72 @@ describe("Card Details", () => {
   it("should not update a card when the back is empty", async () => {
     await loadCardDetailsPage([[collection], cardsPage]);
 
-    document.querySelector("#editCardButton").click();
+    openEditModal();
 
     document.querySelector("#card-front").value = "Frente atualizada";
     document.querySelector("#card-back").value = "   ";
 
-    document
-      .querySelector("#card-form")
-      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    submitCardForm();
 
     expect(apiRequest).toHaveBeenCalledTimes(2);
 
     expect(document.querySelector("#cardDetailsFeedback").textContent).toBe(
-      "Preencha a frente e o verso do cartão.",
+      "Preencha o verso do cartão.",
     );
 
     expect(document.querySelector("#card-modal-overlay").hidden).toBe(false);
+  });
+
+  it("should not update a card when the front exceeds 200 characters", async () => {
+    await loadCardDetailsPage([[collection], cardsPage]);
+
+    openEditModal();
+
+    document.querySelector("#card-front").value = "a".repeat(201);
+    document.querySelector("#card-back").value = "Verso atualizado";
+
+    submitCardForm();
+
+    expect(apiRequest).toHaveBeenCalledTimes(2);
+
+    expect(document.querySelector("#cardDetailsFeedback").textContent).toBe(
+      "A frente do cartão deve ter no máximo 200 caracteres.",
+    );
+  });
+
+  it("should not update a card when the back exceeds 400 characters", async () => {
+    await loadCardDetailsPage([[collection], cardsPage]);
+
+    openEditModal();
+
+    document.querySelector("#card-front").value = "Frente atualizada";
+    document.querySelector("#card-back").value = "a".repeat(401);
+
+    submitCardForm();
+
+    expect(apiRequest).toHaveBeenCalledTimes(2);
+
+    expect(document.querySelector("#cardDetailsFeedback").textContent).toBe(
+      "O verso do cartão deve ter no máximo 400 caracteres.",
+    );
+  });
+
+  it("should not update a card when notes exceed 300 characters", async () => {
+    await loadCardDetailsPage([[collection], cardsPage]);
+
+    openEditModal();
+
+    document.querySelector("#card-front").value = "Frente atualizada";
+    document.querySelector("#card-back").value = "Verso atualizado";
+    document.querySelector("#card-notes").value = "a".repeat(301);
+
+    submitCardForm();
+
+    expect(apiRequest).toHaveBeenCalledTimes(2);
+
+    expect(document.querySelector("#cardDetailsFeedback").textContent).toBe(
+      "As notas devem ter no máximo 300 caracteres.",
+    );
   });
 
   it("should update a card successfully", async () => {
@@ -234,15 +417,13 @@ describe("Card Details", () => {
       updatedCardsPage,
     ]);
 
-    document.querySelector("#editCardButton").click();
+    openEditModal();
 
     document.querySelector("#card-front").value = updatedCard.front;
     document.querySelector("#card-back").value = updatedCard.back;
     document.querySelector("#card-notes").value = updatedCard.notes;
 
-    document
-      .querySelector("#card-form")
-      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    submitCardForm();
 
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -260,6 +441,12 @@ describe("Card Details", () => {
           notes: updatedCard.notes,
         }),
       }),
+    );
+
+    expect(apiRequest).toHaveBeenNthCalledWith(4, "/collections");
+    expect(apiRequest).toHaveBeenNthCalledWith(
+      5,
+      "/collections/1/cards?page=0&size=100",
     );
 
     expect(document.querySelector("#card-modal-overlay").hidden).toBe(true);
@@ -285,14 +472,12 @@ describe("Card Details", () => {
 
     await loadCardDetailsPage([[collection], cardsPage, Promise.reject(error)]);
 
-    document.querySelector("#editCardButton").click();
+    openEditModal();
 
     document.querySelector("#card-front").value = "Frente atualizada";
     document.querySelector("#card-back").value = "Verso atualizado";
 
-    document
-      .querySelector("#card-form")
-      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    submitCardForm();
 
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -306,20 +491,40 @@ describe("Card Details", () => {
     expect(document.querySelector("#save-card").disabled).toBe(false);
   });
 
+  it("should show an error when card update fails with status 404", async () => {
+    const error = new Error("Not found");
+    error.status = 404;
+
+    await loadCardDetailsPage([[collection], cardsPage, Promise.reject(error)]);
+
+    openEditModal();
+
+    document.querySelector("#card-front").value = "Frente atualizada";
+    document.querySelector("#card-back").value = "Verso atualizado";
+
+    submitCardForm();
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.querySelector("#cardDetailsFeedback").textContent).toBe(
+      "O cartão ou a coleção não foi encontrado. Atualize a página e tente novamente.",
+    );
+
+    expect(document.querySelector("#card-modal-overlay").hidden).toBe(false);
+  });
+
   it("should show a generic error when card update fails", async () => {
     const error = new Error("Server error");
     error.status = 500;
 
     await loadCardDetailsPage([[collection], cardsPage, Promise.reject(error)]);
 
-    document.querySelector("#editCardButton").click();
+    openEditModal();
 
     document.querySelector("#card-front").value = "Frente atualizada";
     document.querySelector("#card-back").value = "Verso atualizado";
 
-    document
-      .querySelector("#card-form")
-      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    submitCardForm();
 
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -337,7 +542,7 @@ describe("Card Details", () => {
 
     await loadCardDetailsPage([[collection], cardsPage, Promise.reject(error)]);
 
-    document.querySelector("#deleteCardButton").click();
+    openDeleteModal();
 
     expect(document.querySelector("#delete-card-overlay").hidden).toBe(false);
 
@@ -359,9 +564,7 @@ describe("Card Details", () => {
   it("should delete a card successfully", async () => {
     await loadCardDetailsPage([[collection], cardsPage, null]);
 
-    document.querySelector("#deleteCardButton").click();
-
-    expect(document.querySelector("#delete-card-overlay").hidden).toBe(false);
+    openDeleteModal();
 
     document.querySelector("#confirm-delete-card").click();
 
@@ -370,5 +573,29 @@ describe("Card Details", () => {
     expect(apiRequest).toHaveBeenNthCalledWith(3, "/collections/1/cards/10", {
       method: "DELETE",
     });
+  });
+
+  it("should not load the page when the user is not authenticated", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/card-details.html?collectionId=1&cardId=10",
+    );
+
+    document.body.innerHTML = bodyHtml;
+
+    window.MemorizezSession = {
+      requireAuthentication: jest.fn(() => false),
+    };
+
+    global.apiRequest = jest.fn();
+
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(window.MemorizezSession.requireAuthentication).toHaveBeenCalled();
+
+    expect(apiRequest).not.toHaveBeenCalled();
   });
 });

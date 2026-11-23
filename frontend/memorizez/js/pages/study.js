@@ -11,6 +11,9 @@ const studyContent = document.getElementById("study-content");
 const params = new URLSearchParams(window.location.search);
 const collectionId = params.get("collectionId");
 
+let totalCards = 0;
+let completedCards = 0;
+
 let currentCard = null;
 let isRevealed = false;
 let isSubmitting = false;
@@ -185,13 +188,15 @@ async function revealCard(elements) {
     rememberButton.disabled = false;
     forgotButton.disabled = false;
   } catch (error) {
+    console.error("Não foi possível revelar a resposta:", {
+      status: error?.status ?? null,
+      code: error?.code ?? null,
+      data: error?.data ?? null,
+    });
+
     studyCard.classList.remove("is-revealed");
 
-    showMessage(
-      error.status === 401
-        ? "Sua sessão expirou. Entre novamente para continuar."
-        : "Não foi possível revelar a resposta. Tente novamente.",
-    );
+    showMessage("Não foi possível revelar a resposta. Tente novamente.");
   } finally {
     isSubmitting = false;
   }
@@ -224,7 +229,15 @@ async function submitResult(result) {
       },
     );
 
-    updateProgress(response.progress);
+    completedCards++;
+
+    const percentage = Math.round((completedCards / totalCards) * 100);
+
+    updateProgress({
+      completedCards,
+      totalCards,
+      percentage,
+    });
 
     if (response.completed) {
       renderCompletion();
@@ -233,11 +246,13 @@ async function submitResult(result) {
 
     renderCard(response.nextCard);
   } catch (error) {
-    showMessage(
-      error.status === 401
-        ? "Sua sessão expirou. Entre novamente para continuar."
-        : "Não foi possível registrar sua resposta. Tente novamente.",
-    );
+    console.error("Não foi possível registrar a resposta:", {
+      status: error?.status ?? null,
+      code: error?.code ?? null,
+      data: error?.data ?? null,
+    });
+
+    showMessage("Não foi possível registrar sua resposta. Tente novamente.");
 
     buttons.forEach((button) => {
       button.disabled = false;
@@ -322,13 +337,20 @@ async function initializeStudy() {
       },
     );
 
+    totalCards = firstCard.progress.totalCards;
+    completedCards = 0;
+
     updateProgress(firstCard.progress);
     renderCard(firstCard);
     clearMessage();
   } catch (error) {
-    if (error.status === 401) {
-      showMessage("Sua sessão expirou. Entre novamente para continuar.");
-    } else if (error.status === 404) {
+    console.error("Não foi possível iniciar a revisão:", {
+      status: error?.status ?? null,
+      code: error?.code ?? null,
+      data: error?.data ?? null,
+    });
+
+    if (error?.status === 404) {
       showMessage("Coleção não encontrada.");
     } else {
       showMessage(
@@ -338,4 +360,10 @@ async function initializeStudy() {
   }
 }
 
-initializeStudy();
+document.addEventListener("DOMContentLoaded", () => {
+  if (!window.MemorizezSession?.requireAuthentication()) {
+    return;
+  }
+
+  initializeStudy();
+});

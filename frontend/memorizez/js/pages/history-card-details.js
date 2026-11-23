@@ -1,7 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
+  if (!window.MemorizezSession?.requireAuthentication()) {
+    return;
+  }
+
   const pageTitle = document.getElementById("pageTitle");
   const nextReviewDate = document.getElementById("nextReviewDate");
   const timelineContainer = document.getElementById("history-card-timeline");
+
+  if (!pageTitle || !nextReviewDate || !timelineContainer) {
+    return;
+  }
 
   const params = new URLSearchParams(window.location.search);
   const collectionId = params.get("collectionId");
@@ -247,18 +255,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
       timelineContainer.replaceChildren(fragment);
     } catch (error) {
-      if (error?.status === 401 || error?.status === 403) {
-        showMessage(
-          timelineContainer,
-          "Sua sessão expirou. Faça login novamente para consultar o histórico.",
-          "history-timeline-error",
-        );
-        return;
-      }
+      console.error("Não foi possível carregar a linha do tempo:", {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
 
       showMessage(
         timelineContainer,
-        "Não foi possível carregar a linha do tempo. Tente novamente.",
+        error?.status === 403
+          ? "Você não tem permissão para consultar esta linha do tempo."
+          : "Não foi possível carregar a linha do tempo. Tente novamente.",
         "history-timeline-error",
       );
     }
@@ -278,18 +285,19 @@ document.addEventListener("DOMContentLoaded", () => {
       await loadCardDetails();
       await loadTimeline(0);
     } catch (error) {
-      if (error?.status === 401 || error?.status === 403) {
-        showMessage(
-          timelineContainer,
-          "Sua sessão expirou. Faça login novamente para consultar o histórico.",
-          "history-timeline-error",
-        );
-        return;
-      }
+      console.error("Não foi possível carregar os detalhes do cartão:", {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
 
       showMessage(
         timelineContainer,
-        "Não foi possível carregar os detalhes do cartão.",
+        error?.status === 403
+          ? "Você não tem permissão para consultar este cartão."
+          : error?.message === "Cartão não encontrado."
+            ? error.message
+            : "Não foi possível carregar os detalhes do cartão.",
         "history-timeline-error",
       );
     }

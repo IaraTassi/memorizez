@@ -1,57 +1,15 @@
 describe("History Card Details", () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   const fs = require("fs");
   const path = require("path");
 
   const historyCardDetailsHtml = fs.readFileSync(
-    path.resolve(__dirname, "../history-card-details.html"),
+    path.resolve(__dirname, "../../history-card-details.html"),
     "utf8",
   );
 
   const bodyHtml = historyCardDetailsHtml.match(
     /<body[^>]*>([\s\S]*?)<\/body>/i,
   )[1];
-
-  async function loadHistoryCardDetailsPage(
-    apiResponses = [],
-    collectionId = "1",
-    cardId = "10",
-  ) {
-    document.body.innerHTML = bodyHtml;
-
-    window.history.replaceState(
-      {},
-      "",
-      `/history-card-details.html${
-        collectionId && cardId
-          ? `?collectionId=${encodeURIComponent(collectionId)}&cardId=${encodeURIComponent(cardId)}`
-          : collectionId
-            ? `?collectionId=${encodeURIComponent(collectionId)}`
-            : cardId
-              ? `?cardId=${encodeURIComponent(cardId)}`
-              : ""
-      }`,
-    );
-
-    global.apiRequest = jest.fn();
-
-    apiResponses.forEach((response) => {
-      if (response.type === "reject") {
-        global.apiRequest.mockRejectedValueOnce(response.error);
-      } else {
-        global.apiRequest.mockResolvedValueOnce(response.value);
-      }
-    });
-
-    document.dispatchEvent(new Event("DOMContentLoaded"));
-
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-
-  require("../js/history-card-details");
 
   const cardDetails = {
     id: 10,
@@ -84,6 +42,137 @@ describe("History Card Details", () => {
     first: true,
     last: true,
   };
+
+  function rejectedResponse(error) {
+    return {
+      type: "reject",
+      error,
+    };
+  }
+
+  async function waitForAsync() {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  async function loadHistoryCardDetailsPage(
+    apiResponses = [],
+    collectionId = "1",
+    cardId = "10",
+    authenticated = true,
+  ) {
+    jest.resetModules();
+
+    document.body.innerHTML = bodyHtml;
+
+    window.history.replaceState(
+      {},
+      "",
+      `/history-card-details.html${
+        collectionId && cardId
+          ? `?collectionId=${encodeURIComponent(collectionId)}&cardId=${encodeURIComponent(cardId)}`
+          : collectionId
+            ? `?collectionId=${encodeURIComponent(collectionId)}`
+            : cardId
+              ? `?cardId=${encodeURIComponent(cardId)}`
+              : ""
+      }`,
+    );
+
+    window.MemorizezSession = {
+      requireAuthentication: jest.fn(() => authenticated),
+    };
+
+    global.apiRequest = jest.fn();
+
+    apiResponses.forEach((response) => {
+      if (response.type === "reject") {
+        global.apiRequest.mockRejectedValueOnce(response.error);
+      } else {
+        global.apiRequest.mockResolvedValueOnce(response.value);
+      }
+    });
+
+    let initialize;
+
+    const originalAddEventListener = document.addEventListener.bind(document);
+
+    const addEventListenerSpy = jest
+      .spyOn(document, "addEventListener")
+      .mockImplementation((event, callback, options) => {
+        if (event === "DOMContentLoaded") {
+          initialize = callback;
+          return;
+        }
+
+        originalAddEventListener(event, callback, options);
+      });
+
+    try {
+      require("../../js/pages/history-card-details");
+
+      if (initialize) {
+        initialize();
+      }
+    } finally {
+      addEventListenerSpy.mockRestore();
+    }
+
+    await waitForAsync();
+  }
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.restoreAllMocks();
+  });
+
+  it("should require authentication before loading the page", async () => {
+    await loadHistoryCardDetailsPage([], "1", "10", false);
+
+    expect(window.MemorizezSession.requireAuthentication).toHaveBeenCalledTimes(
+      1,
+    );
+
+    expect(global.apiRequest).not.toHaveBeenCalled();
+  });
+
+  it("should not initialize when required HTML elements are missing", async () => {
+    document.body.innerHTML = "";
+
+    jest.resetModules();
+
+    window.MemorizezSession = {
+      requireAuthentication: jest.fn(() => true),
+    };
+
+    global.apiRequest = jest.fn();
+
+    let initialize;
+
+    const originalAddEventListener = document.addEventListener.bind(document);
+
+    const addEventListenerSpy = jest
+      .spyOn(document, "addEventListener")
+      .mockImplementation((event, callback, options) => {
+        if (event === "DOMContentLoaded") {
+          initialize = callback;
+          return;
+        }
+
+        originalAddEventListener(event, callback, options);
+      });
+
+    try {
+      require("../../js/pages/history-card-details");
+
+      if (initialize) {
+        initialize();
+      }
+    } finally {
+      addEventListenerSpy.mockRestore();
+    }
+
+    expect(global.apiRequest).not.toHaveBeenCalled();
+  });
 
   it("should load card details and timeline successfully", async () => {
     await loadHistoryCardDetailsPage([
@@ -181,40 +270,33 @@ describe("History Card Details", () => {
     expect(global.apiRequest).not.toHaveBeenCalled();
   });
 
-  it("should show a session expired message when loading card details returns 401", async () => {
+  it("should show an error when card details return 401", async () => {
     await loadHistoryCardDetailsPage([
-      {
-        type: "reject",
-        error: Object.assign(new Error("Unauthorized"), { status: 401 }),
-      },
+      rejectedResponse(
+        Object.assign(new Error("Unauthorized"), { status: 401 }),
+      ),
     ]);
 
-    expect(
-      document.querySelector(".history-timeline-error").textContent,
-    ).toContain("Sua sessão expirou.");
+    expect(document.querySelector(".history-timeline-error").textContent).toBe(
+      "Não foi possível carregar os detalhes do cartão.",
+    );
 
     expect(global.apiRequest).toHaveBeenCalledTimes(1);
   });
 
-  it("should show a session expired message when loading card details returns 403", async () => {
+  it("should show a permission error when card details return 403", async () => {
     await loadHistoryCardDetailsPage([
-      {
-        type: "reject",
-        error: Object.assign(new Error("Forbidden"), { status: 403 }),
-      },
+      rejectedResponse(Object.assign(new Error("Forbidden"), { status: 403 })),
     ]);
 
-    expect(
-      document.querySelector(".history-timeline-error").textContent,
-    ).toContain("Sua sessão expirou.");
+    expect(document.querySelector(".history-timeline-error").textContent).toBe(
+      "Você não tem permissão para consultar este cartão.",
+    );
   });
 
   it("should show an error when card details cannot be loaded", async () => {
     await loadHistoryCardDetailsPage([
-      {
-        type: "reject",
-        error: new Error("Network error"),
-      },
+      rejectedResponse(new Error("Network error")),
     ]);
 
     expect(document.querySelector(".history-timeline-error").textContent).toBe(
@@ -222,12 +304,14 @@ describe("History Card Details", () => {
     );
   });
 
-  it("should show an error when the card is not found", async () => {
+  it("should show the not found message when the card does not exist", async () => {
     await loadHistoryCardDetailsPage([{ value: null }]);
 
     expect(document.querySelector(".history-timeline-error").textContent).toBe(
-      "Não foi possível carregar os detalhes do cartão.",
+      "Cartão não encontrado.",
     );
+
+    expect(global.apiRequest).toHaveBeenCalledTimes(1);
   });
 
   it("should show a message when there is no next review scheduled", async () => {
@@ -257,43 +341,36 @@ describe("History Card Details", () => {
     );
   });
 
-  it("should show a session expired message when loading timeline returns 401", async () => {
+  it("should show an error when timeline loading returns 401", async () => {
     await loadHistoryCardDetailsPage([
       { value: cardDetails },
-      {
-        type: "reject",
-        error: Object.assign(new Error("Unauthorized"), { status: 401 }),
-      },
+      rejectedResponse(
+        Object.assign(new Error("Unauthorized"), { status: 401 }),
+      ),
     ]);
 
-    expect(
-      document.querySelector(".history-timeline-error").textContent,
-    ).toContain("Sua sessão expirou.");
+    expect(document.querySelector(".history-timeline-error").textContent).toBe(
+      "Não foi possível carregar a linha do tempo. Tente novamente.",
+    );
 
     expect(global.apiRequest).toHaveBeenCalledTimes(2);
   });
 
-  it("should show a session expired message when loading timeline returns 403", async () => {
+  it("should show a permission error when timeline loading returns 403", async () => {
     await loadHistoryCardDetailsPage([
       { value: cardDetails },
-      {
-        type: "reject",
-        error: Object.assign(new Error("Forbidden"), { status: 403 }),
-      },
+      rejectedResponse(Object.assign(new Error("Forbidden"), { status: 403 })),
     ]);
 
-    expect(
-      document.querySelector(".history-timeline-error").textContent,
-    ).toContain("Sua sessão expirou.");
+    expect(document.querySelector(".history-timeline-error").textContent).toBe(
+      "Você não tem permissão para consultar esta linha do tempo.",
+    );
   });
 
   it("should show an error when timeline cannot be loaded", async () => {
     await loadHistoryCardDetailsPage([
       { value: cardDetails },
-      {
-        type: "reject",
-        error: new Error("Network error"),
-      },
+      rejectedResponse(new Error("Network error")),
     ]);
 
     expect(document.querySelector(".history-timeline-error").textContent).toBe(
@@ -406,7 +483,7 @@ describe("History Card Details", () => {
 
     buttons[1].click();
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitForAsync();
 
     expect(global.apiRequest).toHaveBeenNthCalledWith(
       3,
@@ -428,7 +505,7 @@ describe("History Card Details", () => {
 
     buttons[0].click();
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitForAsync();
 
     expect(global.apiRequest).toHaveBeenNthCalledWith(
       4,
@@ -438,5 +515,27 @@ describe("History Card Details", () => {
     expect(
       document.querySelector(".history-timeline-pagination-info").textContent,
     ).toBe("Página 1 de 2");
+  });
+
+  it("should encode identifiers in API requests and back link", async () => {
+    await loadHistoryCardDetailsPage(
+      [{ value: cardDetails }, { value: timelinePage }],
+      "collection 1",
+      "card/10",
+    );
+
+    expect(global.apiRequest).toHaveBeenNthCalledWith(
+      1,
+      "/history/collections/collection%201/cards/card%2F10",
+    );
+
+    expect(global.apiRequest).toHaveBeenNthCalledWith(
+      2,
+      "/history/collections/collection%201/cards/card%2F10/history?page=0&size=20",
+    );
+
+    expect(document.querySelector(".page-back-link").getAttribute("href")).toBe(
+      "history-cards.html?collectionId=collection%201",
+    );
   });
 });

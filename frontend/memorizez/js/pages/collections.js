@@ -1,4 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
+  if (!window.MemorizezSession?.requireAuthentication()) {
+    return;
+  }
   const collectionsList = document.getElementById("collectionsList");
   const feedback = document.getElementById("collectionsFeedback");
 
@@ -311,11 +314,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       renderCollections(collections);
     } catch (error) {
-      if (error.status === 401) {
-        window.location.replace("index.html");
-        return;
-      }
-
       collectionsList.replaceChildren();
 
       const errorMessage = document.createElement("p");
@@ -356,13 +354,8 @@ document.addEventListener("DOMContentLoaded", () => {
       showFeedback("Coleção excluída com sucesso.");
       await loadCollections();
     } catch (error) {
-      if (error.status === 401) {
-        window.location.replace("index.html");
-        return;
-      }
-
       showFeedback(
-        error.status === 404
+        error?.status === 404
           ? "Esta coleção não foi encontrada. Atualize a página e tente novamente."
           : "Não foi possível excluir a coleção. Tente novamente.",
         "error",
@@ -442,17 +435,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       await loadCollections();
     } catch (error) {
-      if (error.status === 401) {
-        window.location.replace("index.html");
-        return;
-      }
-
-      if (error.status === 404 && editingCollection) {
+      if (error?.status === 404 && editingCollection) {
         showFeedback(
           "Esta coleção não foi encontrada. Atualize a página e tente novamente.",
           "error",
         );
-      } else if (error.status === 400) {
+      } else if (error?.status === 400) {
         showFeedback(
           editingCollection
             ? "Não foi possível atualizar a coleção. Confira o nome e tente novamente."
@@ -469,7 +457,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } finally {
       saveButton.disabled = false;
-      saveButton.textContent = "Criar coleção";
+      saveButton.textContent = editingCollection
+        ? "Salvar alterações"
+        : "Criar coleção";
     }
   });
 

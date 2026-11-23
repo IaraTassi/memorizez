@@ -1,4 +1,8 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  if (!window.MemorizezSession?.requireAuthentication()) {
+    return;
+  }
+
   CardModals.render();
 
   const pageTitle = document.querySelector("#pageTitle");
@@ -265,8 +269,39 @@ document.addEventListener("DOMContentLoaded", async () => {
     const back = cardBack.value.trim();
     const notes = cardNotes.value.trim();
 
-    if (!front || !back) {
-      showFeedback("Preencha a frente e o verso do cartão.", "error");
+    if (!front) {
+      showFeedback("Preencha a frente do cartão.", "error");
+      cardFront.focus();
+      return;
+    }
+
+    if (front.length > 200) {
+      showFeedback(
+        "A frente do cartão deve ter no máximo 200 caracteres.",
+        "error",
+      );
+      cardFront.focus();
+      return;
+    }
+
+    if (!back) {
+      showFeedback("Preencha o verso do cartão.", "error");
+      cardBack.focus();
+      return;
+    }
+
+    if (back.length > 400) {
+      showFeedback(
+        "O verso do cartão deve ter no máximo 400 caracteres.",
+        "error",
+      );
+      cardBack.focus();
+      return;
+    }
+
+    if (notes.length > 300) {
+      showFeedback("As notas devem ter no máximo 300 caracteres.", "error");
+      cardNotes.focus();
       return;
     }
 
@@ -289,17 +324,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       showFeedback("Cartão atualizado com sucesso.", "success");
     } catch (error) {
-      console.error("Não foi possível atualizar o cartão:", error);
-
-      if (error.status === 401) {
-        window.location.replace("index.html");
-        return;
-      }
+      console.error("Não foi possível atualizar o cartão:", {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
 
       showFeedback(
-        error.status === 400
+        error?.status === 400
           ? "Verifique os campos e tente novamente."
-          : "Não foi possível atualizar o cartão. Tente novamente.",
+          : error?.status === 404
+            ? "O cartão ou a coleção não foi encontrado. Atualize a página e tente novamente."
+            : "Não foi possível atualizar o cartão. Tente novamente.",
         "error",
       );
     } finally {
@@ -322,11 +358,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (error) {
       console.error("Não foi possível excluir o cartão:", error);
 
-      if (error.status === 401) {
-        window.location.replace("index.html");
-        return;
-      }
-
       showFeedback(
         "Não foi possível excluir o cartão. Tente novamente.",
         "error",
@@ -341,11 +372,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (error) {
     console.error("Não foi possível carregar os detalhes:", error);
 
-    if (error.status === 401) {
-      window.location.replace("index.html");
-      return;
-    }
-
     pageTitle.textContent = "Detalhes indisponíveis";
     cardDetailsContent.replaceChildren();
 
@@ -354,9 +380,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     cardDetailsContent.append(message);
 
     showFeedback(
-      error.message === "Cartão não encontrado nesta coleção." ||
-        error.message === "Coleção não encontrada."
-        ? error.message
+      error?.message === "Cartão não encontrado nesta coleção." ||
+        error?.message === "Coleção não encontrada."
+        ? error?.message
         : "Ocorreu um erro ao carregar o cartão. Tente novamente.",
       "error",
     );

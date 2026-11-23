@@ -1,5 +1,8 @@
 describe("API", () => {
-  const { getCsrfToken, apiRequest } = require("../js/api");
+  const { apiRequest } = require("../../js/core/api");
+
+  const TOKEN_STORAGE_KEY = "memorizez.token";
+  const SESSION_EXPIRED_EVENT = "memorizez:session-expired";
 
   function createMockResponse(
     body = null,
@@ -45,100 +48,12 @@ describe("API", () => {
 
   beforeEach(() => {
     global.fetch = jest.fn();
+    sessionStorage.clear();
   });
 
   afterEach(() => {
     jest.resetAllMocks();
-  });
-
-  describe("getCsrfToken", () => {
-    it("should return the CSRF token successfully", async () => {
-      global.fetch.mockResolvedValue(
-        createMockResponse({
-          token: "test-csrf-token",
-        }),
-      );
-
-      const token = await getCsrfToken();
-
-      expect(token).toBe("test-csrf-token");
-
-      const [url, options] = global.fetch.mock.calls[0];
-
-      expect(url).toBe("https://memorizez.onrender.com/csrf");
-
-      expect(options.method).toBe("GET");
-      expect(options.credentials).toBe("include");
-
-      expect(options.headers).toEqual({
-        Accept: "application/json",
-      });
-
-      expect(options.signal).toBeDefined();
-      expect(options.signal).toBeInstanceOf(AbortSignal);
-    });
-
-    it("should throw an error when CSRF request fails", async () => {
-      global.fetch.mockResolvedValue(
-        createMockResponse(null, {
-          status: 500,
-        }),
-      );
-
-      await expect(getCsrfToken()).rejects.toMatchObject({
-        message: "Não foi possível validar a segurança da sessão.",
-        status: 500,
-        code: "CSRF_ERROR",
-      });
-    });
-
-    it("should use the backend userMessage when CSRF request fails", async () => {
-      global.fetch.mockResolvedValue(
-        createMockResponse(
-          {
-            userMessage: "Falha na validação da sessão.",
-            code: "CSRF_INVALID",
-          },
-          { status: 403 },
-        ),
-      );
-
-      await expect(getCsrfToken()).rejects.toMatchObject({
-        message: "Falha na validação da sessão.",
-        status: 403,
-        code: "CSRF_INVALID",
-      });
-    });
-
-    it("should reject an invalid CSRF token response", async () => {
-      global.fetch.mockResolvedValue(
-        createMockResponse({
-          token: "",
-        }),
-      );
-
-      await expect(getCsrfToken()).rejects.toMatchObject({
-        code: "INVALID_CSRF_TOKEN",
-      });
-    });
-
-    it("should throw CSRF_TIMEOUT_ERROR when CSRF response body reading exceeds timeout", async () => {
-      global.fetch.mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: jest.fn(() => new Promise(() => {})),
-      });
-
-      await expect(
-        getCsrfToken({
-          timeoutMs: 20,
-        }),
-      ).rejects.toMatchObject({
-        code: "CSRF_TIMEOUT_ERROR",
-      });
-
-      expect(global.fetch).toHaveBeenCalledTimes(1);
-    });
+    sessionStorage.clear();
   });
 
   describe("apiRequest", () => {
@@ -153,31 +68,28 @@ describe("API", () => {
       const [url, options] = global.fetch.mock.calls[0];
 
       expect(url).toBe("https://memorizez.onrender.com/collections");
-
       expect(options.method).toBe("GET");
-      expect(options.credentials).toBe("include");
+      expect(options.credentials).toBeUndefined();
 
       expectRequestHeaders(options, {
         Accept: "application/json",
       });
+
+      expect(options.headers.has("Authorization")).toBe(false);
     });
 
-    it("should make a POST request with CSRF token", async () => {
-      global.fetch
-        .mockResolvedValueOnce(
-          createMockResponse({
-            token: "test-csrf-token",
-          }),
-        )
-        .mockResolvedValueOnce(
-          createMockResponse(
-            {
-              id: 1,
-              name: "Java",
-            },
-            { status: 201 },
-          ),
-        );
+    it("should make a POST request successfully with JWT", async () => {
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, "test-jwt-token");
+
+      global.fetch.mockResolvedValue(
+        createMockResponse(
+          {
+            id: 1,
+            name: "Java",
+          },
+          { status: 201 },
+        ),
+      );
 
       const body = JSON.stringify({
         name: "Java",
@@ -196,29 +108,14 @@ describe("API", () => {
         name: "Java",
       });
 
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
 
-      const [csrfUrl, csrfOptions] = global.fetch.mock.calls[0];
-
-      expect(csrfUrl).toBe("https://memorizez.onrender.com/csrf");
-
-      expect(csrfOptions.method).toBe("GET");
-      expect(csrfOptions.credentials).toBe("include");
-
-      expect(csrfOptions.headers).toEqual({
-        Accept: "application/json",
-      });
-
-      expect(csrfOptions.signal).toBeDefined();
-      expect(csrfOptions.signal).toBeInstanceOf(AbortSignal);
-
-      const [url, options] = global.fetch.mock.calls[1];
+      const [url, options] = global.fetch.mock.calls[0];
 
       expect(url).toBe("https://memorizez.onrender.com/collections");
-
       expect(options.method).toBe("POST");
       expect(options.body).toBe(body);
-      expect(options.credentials).toBe("include");
+      expect(options.credentials).toBeUndefined();
 
       expect(options.signal).toBeDefined();
       expect(options.signal).toBeInstanceOf(AbortSignal);
@@ -226,22 +123,20 @@ describe("API", () => {
       expectRequestHeaders(options, {
         Accept: "application/json",
         "Content-Type": "application/json",
-        "X-CSRF-TOKEN": "test-csrf-token",
+        Authorization: "Bearer test-jwt-token",
       });
+
+      expect(options.headers.has("X-CSRF-TOKEN")).toBe(false);
     });
 
-    it("should make a PUT request with CSRF token", async () => {
-      global.fetch
-        .mockResolvedValueOnce(
-          createMockResponse({
-            token: "test-csrf-token",
-          }),
-        )
-        .mockResolvedValueOnce(
-          createMockResponse(null, {
-            status: 204,
-          }),
-        );
+    it("should make a PUT request successfully with JWT", async () => {
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, "test-jwt-token");
+
+      global.fetch.mockResolvedValue(
+        createMockResponse(null, {
+          status: 204,
+        }),
+      );
 
       const body = JSON.stringify({
         name: "Java Spring",
@@ -253,54 +148,118 @@ describe("API", () => {
       });
 
       expect(result).toBeNull();
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
 
-      const [url, options] = global.fetch.mock.calls[1];
+      const [url, options] = global.fetch.mock.calls[0];
 
       expect(url).toBe("https://memorizez.onrender.com/collections/1");
-
       expect(options.method).toBe("PUT");
       expect(options.body).toBe(body);
-      expect(options.credentials).toBe("include");
+      expect(options.credentials).toBeUndefined();
 
       expectRequestHeaders(options, {
         Accept: "application/json",
         "Content-Type": "application/json",
-        "X-CSRF-TOKEN": "test-csrf-token",
+        Authorization: "Bearer test-jwt-token",
       });
+
+      expect(options.headers.has("X-CSRF-TOKEN")).toBe(false);
     });
 
-    it("should make a DELETE request with CSRF token", async () => {
-      global.fetch
-        .mockResolvedValueOnce(
-          createMockResponse({
-            token: "test-csrf-token",
-          }),
-        )
-        .mockResolvedValueOnce(
-          createMockResponse(null, {
-            status: 204,
-          }),
-        );
+    it("should make a DELETE request successfully with JWT", async () => {
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, "test-jwt-token");
+
+      global.fetch.mockResolvedValue(
+        createMockResponse(null, {
+          status: 204,
+        }),
+      );
 
       const result = await apiRequest("/collections/1", {
         method: "DELETE",
       });
 
       expect(result).toBeNull();
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
 
-      const [url, options] = global.fetch.mock.calls[1];
+      const [url, options] = global.fetch.mock.calls[0];
 
       expect(url).toBe("https://memorizez.onrender.com/collections/1");
-
       expect(options.method).toBe("DELETE");
-      expect(options.credentials).toBe("include");
+      expect(options.credentials).toBeUndefined();
 
       expectRequestHeaders(options, {
         Accept: "application/json",
-        "X-CSRF-TOKEN": "test-csrf-token",
+        Authorization: "Bearer test-jwt-token",
       });
+
+      expect(options.headers.has("X-CSRF-TOKEN")).toBe(false);
+    });
+
+    it("should not send Authorization when there is no stored token", async () => {
+      global.fetch.mockResolvedValue(createMockResponse());
+
+      await apiRequest("/collections");
+
+      const [, options] = global.fetch.mock.calls[0];
+
+      expect(options.headers.has("Authorization")).toBe(false);
+    });
+
+    it("should not send Authorization for user registration", async () => {
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, "test-jwt-token");
+
+      global.fetch.mockResolvedValue(
+        createMockResponse(
+          {
+            id: 1,
+            name: "Usuario",
+          },
+          { status: 201 },
+        ),
+      );
+
+      await apiRequest("/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "Usuario",
+          email: "usuario@example.com",
+          password: "password",
+          confirmPassword: "password",
+        }),
+      });
+
+      const [, options] = global.fetch.mock.calls[0];
+
+      expect(options.headers.has("Authorization")).toBe(false);
+    });
+
+    it("should not send Authorization for login", async () => {
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, "test-jwt-token");
+
+      global.fetch.mockResolvedValue(
+        createMockResponse({
+          token: "new-jwt-token",
+        }),
+      );
+
+      await apiRequest("/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: "usuario@example.com",
+          password: "password",
+        }),
+      });
+
+      const [, options] = global.fetch.mock.calls[0];
+
+      expect(options.headers.has("Authorization")).toBe(false);
     });
 
     it("should throw an error when the API request fails", async () => {
@@ -424,29 +383,6 @@ describe("API", () => {
       });
     });
 
-    it("should not make the API request when CSRF token retrieval fails", async () => {
-      global.fetch.mockResolvedValue(
-        createMockResponse(null, {
-          status: 500,
-        }),
-      );
-
-      await expect(
-        apiRequest("/collections", {
-          method: "POST",
-          body: JSON.stringify({
-            name: "Java",
-          }),
-        }),
-      ).rejects.toMatchObject({
-        message: "Não foi possível validar a segurança da sessão.",
-        status: 500,
-        code: "CSRF_ERROR",
-      });
-
-      expect(global.fetch).toHaveBeenCalledTimes(1);
-    });
-
     it("should throw NETWORK_ERROR when the API connection fails", async () => {
       global.fetch.mockRejectedValue(new TypeError("Failed to fetch"));
 
@@ -457,18 +393,13 @@ describe("API", () => {
       });
     });
 
-    it("should throw CSRF_CONNECTION_ERROR when CSRF connection fails", async () => {
-      global.fetch.mockRejectedValue(new TypeError("Failed to fetch"));
-
-      await expect(getCsrfToken()).rejects.toMatchObject({
-        code: "CSRF_CONNECTION_ERROR",
-      });
-    });
-
     it("should throw TIMEOUT_ERROR when response body reading exceeds timeout", async () => {
       global.fetch.mockResolvedValue({
         ok: true,
         status: 200,
+        headers: {
+          get: jest.fn(() => "application/json"),
+        },
         text: jest.fn(() => new Promise(() => {})),
       });
 
@@ -507,6 +438,93 @@ describe("API", () => {
       ).rejects.toThrow("A URL da API deve pertencer à origem configurada.");
 
       expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it("should dispatch session expired event when a protected request returns 401", async () => {
+      const eventHandler = jest.fn();
+
+      window.addEventListener(SESSION_EXPIRED_EVENT, eventHandler);
+
+      global.fetch.mockResolvedValue(
+        createMockResponse(
+          {
+            message: "Unauthorized",
+          },
+          { status: 401 },
+        ),
+      );
+
+      await expect(apiRequest("/collections")).rejects.toMatchObject({
+        status: 401,
+      });
+
+      expect(eventHandler).toHaveBeenCalledTimes(1);
+
+      window.removeEventListener(SESSION_EXPIRED_EVENT, eventHandler);
+    });
+
+    it("should not dispatch session expired event for login when it returns 401", async () => {
+      const eventHandler = jest.fn();
+
+      window.addEventListener(SESSION_EXPIRED_EVENT, eventHandler);
+
+      global.fetch.mockResolvedValue(
+        createMockResponse(
+          {
+            message: "Credenciais inválidas.",
+          },
+          { status: 401 },
+        ),
+      );
+
+      await expect(
+        apiRequest("/users/login", {
+          method: "POST",
+          body: JSON.stringify({
+            email: "usuario@example.com",
+            password: "wrong-password",
+          }),
+        }),
+      ).rejects.toMatchObject({
+        status: 401,
+      });
+
+      expect(eventHandler).not.toHaveBeenCalled();
+
+      window.removeEventListener(SESSION_EXPIRED_EVENT, eventHandler);
+    });
+
+    it("should not dispatch session expired event for registration when it returns 401", async () => {
+      const eventHandler = jest.fn();
+
+      window.addEventListener(SESSION_EXPIRED_EVENT, eventHandler);
+
+      global.fetch.mockResolvedValue(
+        createMockResponse(
+          {
+            message: "Unauthorized",
+          },
+          { status: 401 },
+        ),
+      );
+
+      await expect(
+        apiRequest("/users", {
+          method: "POST",
+          body: JSON.stringify({
+            name: "Usuario",
+            email: "usuario@example.com",
+            password: "password",
+            confirmPassword: "password",
+          }),
+        }),
+      ).rejects.toMatchObject({
+        status: 401,
+      });
+
+      expect(eventHandler).not.toHaveBeenCalled();
+
+      window.removeEventListener(SESSION_EXPIRED_EVENT, eventHandler);
     });
   });
 });

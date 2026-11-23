@@ -2,6 +2,10 @@ let privateLayoutKeydownHandler = null;
 let privateLayoutSessionExpiredHandler = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
+  if (!window.MemorizezSession?.requireAuthentication()) {
+    return;
+  }
+
   if (privateLayoutKeydownHandler) {
     document.removeEventListener("keydown", privateLayoutKeydownHandler);
   }
@@ -592,16 +596,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       if (action === "logout") {
-        await apiRequest("/logout", {
-          method: "POST",
-        });
-      } else if (action === "delete-account") {
+        window.MemorizezAuth?.removeToken();
+        clearStoredProfileName();
+
+        window.location.replace("index.html");
+        return;
+      }
+
+      if (action === "delete-account") {
         await apiRequest("/users", {
           method: "DELETE",
         });
       }
 
+      window.MemorizezAuth?.removeToken();
       clearStoredProfileName();
+
       window.location.replace("index.html");
     } catch (error) {
       console.error(`[MEMORIZEZ] Erro ao executar ${action}:`, {
@@ -618,21 +628,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       const communicationFailure = [
         "NETWORK_ERROR",
         "RESPONSE_READ_ERROR",
-        "CSRF_CONNECTION_ERROR",
         "TIMEOUT_ERROR",
+        "REQUEST_ABORTED",
       ].includes(error?.code);
 
-      let fallbackMessage;
-
-      if (action === "delete-account") {
-        fallbackMessage = communicationFailure
-          ? "Não foi possível confirmar o resultado da exclusão devido a uma falha de comunicação. Verifique sua conexão antes de tentar novamente."
-          : "Não foi possível excluir sua conta. Tente novamente.";
-      } else {
-        fallbackMessage = communicationFailure
-          ? "Não foi possível confirmar o encerramento da sessão devido a uma falha de comunicação. Verifique sua conexão antes de tentar novamente."
+      const fallbackMessage = communicationFailure
+        ? "Não foi possível confirmar o resultado da operação devido a uma falha de comunicação. Verifique sua conexão antes de tentar novamente."
+        : action === "delete-account"
+          ? "Não foi possível excluir sua conta. Tente novamente."
           : "Não foi possível encerrar sua sessão. Tente novamente.";
-      }
 
       showModalFeedback(getApiErrorMessage(error, fallbackMessage));
     } finally {
@@ -759,8 +763,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         profileNames.forEach((element) => {
           element.textContent = "Meu perfil";
         });
-
-        openSessionExpiredModal();
       }
 
       console.error(

@@ -1,5 +1,13 @@
 document.addEventListener("DOMContentLoaded", () => {
+  if (!window.MemorizezSession?.requireAuthentication()) {
+    return;
+  }
+
   const collectionsContainer = document.getElementById("history-collections");
+
+  if (!collectionsContainer) {
+    return;
+  }
 
   function createElement(tag, className, text) {
     const element = document.createElement(tag);
@@ -18,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function createCollectionRow(collection) {
     const row = createElement("button", "history-collection-row");
     row.type = "button";
+
     row.addEventListener("click", () => {
       window.location.href = `history-cards.html?collectionId=${encodeURIComponent(collection.id)}`;
     });
@@ -95,13 +104,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       collectionsContainer.replaceChildren(fragment);
     } catch (error) {
-      if (error?.status === 401 || error?.status === 403) {
-        showMessage(
-          "Sua sessão expirou. Faça login novamente para consultar o histórico.",
-          "history-error-message",
-        );
-        return;
-      }
+      console.error("Não foi possível carregar o histórico:", {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
 
       showMessage(
         "Não foi possível carregar suas coleções. Tente novamente.",

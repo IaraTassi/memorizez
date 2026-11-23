@@ -72,14 +72,10 @@ function buildApiUrl(path) {
   }
 }
 
-function createTimeoutError(isCsrf = false) {
+function createTimeoutError() {
   return new ApiError(
-    isCsrf
-      ? "O tempo limite para validar a segurança da sessão foi excedido."
-      : "O tempo limite da solicitação foi excedido. Tente novamente.",
-    {
-      code: isCsrf ? "CSRF_TIMEOUT_ERROR" : "TIMEOUT_ERROR",
-    },
+    "O tempo limite da solicitação foi excedido. Tente novamente.",
+    { code: "TIMEOUT_ERROR" },
   );
 }
 
@@ -181,7 +177,6 @@ async function requestWithTimeout(
   url,
   options = {},
   timeoutMs = DEFAULT_TIMEOUT_MS,
-  errorFactory = () => createTimeoutError(),
 ) {
   const { signal, ...fetchOptions } = options;
 
@@ -194,15 +189,11 @@ async function requestWithTimeout(
 
       const data = await readResponseBody(response);
 
-      return {
-        response,
-        data,
-      };
+      return { response, data };
     },
     {
       timeoutMs,
       signal,
-      errorFactory,
     },
   );
 }
@@ -234,9 +225,7 @@ async function readResponseBody(response) {
   try {
     return JSON.parse(text);
   } catch {
-    return {
-      rawMessage: text,
-    };
+    return { rawMessage: text };
   }
 }
 
@@ -263,17 +252,7 @@ function isPublicAuthenticationRequest(path, method) {
 
   return (
     (method === "POST" && pathname === "/users") ||
-    (method === "POST" && pathname === "/users/login") ||
-    pathname === "/csrf"
-  );
-}
-
-function isAccountSessionRequest(path, method) {
-  const pathname = getRequestPath(path);
-
-  return (
-    (method === "POST" && pathname === "/logout") ||
-    (method === "DELETE" && pathname === "/users")
+    (method === "POST" && pathname === "/users/login")
   );
 }
 
@@ -288,73 +267,18 @@ function notifySessionExpired(path, method, status) {
 
   window.dispatchEvent(
     new window.CustomEvent("memorizez:session-expired", {
-      detail: {
-        path,
-        method,
-        status,
-      },
+      detail: { path, method, status },
     }),
   );
 }
 
-async function getCsrfToken(options = {}) {
-  let result;
-
+function getStoredToken() {
   try {
-    result = await requestWithTimeout(
-      buildApiUrl("/csrf"),
-      {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          Accept: "application/json",
-        },
-        signal: options.signal,
-      },
-      options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      () => createTimeoutError(true),
-    );
+    return sessionStorage.getItem("memorizez.token");
   } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-
-    console.error("[MEMORIZEZ API] Falha ao obter CSRF:", error);
-
-    throw new ApiError(
-      "Não foi possível estabelecer conexão para obter o token de segurança.",
-      {
-        code: "CSRF_CONNECTION_ERROR",
-      },
-    );
+    console.warn("[MEMORIZEZ] Não foi possível acessar o token.", error);
+    return null;
   }
-
-  const { response, data } = result;
-
-  if (!response.ok) {
-    throw new ApiError(
-      extractErrorMessage(data) ||
-        "Não foi possível validar a segurança da sessão.",
-      {
-        status: response.status,
-        data,
-        code: data?.code || "CSRF_ERROR",
-      },
-    );
-  }
-
-  if (!data || typeof data.token !== "string" || !data.token.trim()) {
-    throw new ApiError(
-      "O servidor não disponibilizou um token de segurança válido.",
-      {
-        status: response.status,
-        data,
-        code: "INVALID_CSRF_TOKEN",
-      },
-    );
-  }
-
-  return data.token;
 }
 
 async function apiRequest(path, options = {}) {
@@ -366,34 +290,18 @@ async function apiRequest(path, options = {}) {
   headers.set("Accept", "application/json");
 
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const needsCsrf = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
   const externalSignal = options.signal;
 
   if (externalSignal?.aborted) {
     throw createAbortError();
   }
 
-  if (needsCsrf) {
-    let token;
+  if (!isPublicAuthenticationRequest(path, method)) {
+    const token = getStoredToken();
 
-    try {
-      token = await getCsrfToken({
-        signal: externalSignal,
-        timeoutMs,
-      });
-    } catch (error) {
-      if (
-        error?.status === 401 &&
-        !isPublicAuthenticationRequest(path, method) &&
-        !isAccountSessionRequest(path, method)
-      ) {
-        notifySessionExpired(path, method, error.status);
-      }
-
-      throw error;
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
     }
-
-    headers.set("X-CSRF-TOKEN", token);
   }
 
   const isFormData =
@@ -416,7 +324,6 @@ async function apiRequest(path, options = {}) {
       {
         ...fetchOptions,
         method,
-        credentials: "include",
         headers,
         signal: externalSignal,
       },
@@ -441,9 +348,7 @@ async function apiRequest(path, options = {}) {
 
     throw new ApiError(
       "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
-      {
-        code: "NETWORK_ERROR",
-      },
+      { code: "NETWORK_ERROR" },
     );
   }
 
@@ -452,8 +357,7 @@ async function apiRequest(path, options = {}) {
   if (!response.ok) {
     if (
       response.status === 401 &&
-      !isPublicAuthenticationRequest(path, method) &&
-      !isAccountSessionRequest(path, method)
+      !isPublicAuthenticationRequest(path, method)
     ) {
       notifySessionExpired(path, method, response.status);
     }
@@ -474,13 +378,12 @@ async function apiRequest(path, options = {}) {
 const MemorizezApi = Object.freeze({
   ApiError,
   fetchWithTimeout,
-  getCsrfToken,
   apiRequest,
   readResponseBody,
   extractErrorMessage,
   isPublicAuthenticationRequest,
-  isAccountSessionRequest,
   notifySessionExpired,
+  getStoredToken,
 });
 
 if (typeof window !== "undefined") {

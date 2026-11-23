@@ -1,13 +1,9 @@
 describe("Free Study Session", () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   const fs = require("fs");
   const path = require("path");
 
   const freeStudySessionHtml = fs.readFileSync(
-    path.resolve(__dirname, "../free-study-session.html"),
+    path.resolve(__dirname, "../../free-study-session.html"),
     "utf8",
   );
 
@@ -15,10 +11,22 @@ describe("Free Study Session", () => {
     /<body[^>]*>([\s\S]*?)<\/body>/i,
   )[1];
 
+  function rejectedResponse(error) {
+    return {
+      type: "reject",
+      error,
+    };
+  }
+
+  async function waitForAsync() {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
   async function loadFreeStudySessionPage(
     apiResponses = [],
     collectionId = "1",
     includeContainer = true,
+    authenticated = true,
   ) {
     document.body.innerHTML = bodyHtml;
 
@@ -26,7 +34,6 @@ describe("Free Study Session", () => {
       document.body.innerHTML = "<main></main>";
     }
 
-    delete window.location;
     window.history.replaceState(
       {},
       "",
@@ -35,18 +42,61 @@ describe("Free Study Session", () => {
       }`,
     );
 
+    window.MemorizezSession = {
+      requireAuthentication: jest.fn(() => authenticated),
+    };
+
     global.apiRequest = jest.fn();
 
     apiResponses.forEach((response) => {
-      global.apiRequest.mockResolvedValueOnce(response);
+      if (response?.type === "reject") {
+        global.apiRequest.mockRejectedValueOnce(response.error);
+      } else {
+        global.apiRequest.mockResolvedValueOnce(response);
+      }
     });
 
-    document.dispatchEvent(new Event("DOMContentLoaded"));
+    jest.resetModules();
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    let initialize;
+
+    const originalAddEventListener = document.addEventListener.bind(document);
+
+    const addEventListenerSpy = jest
+      .spyOn(document, "addEventListener")
+      .mockImplementation((event, callback, options) => {
+        if (event === "DOMContentLoaded") {
+          initialize = callback;
+          return;
+        }
+
+        originalAddEventListener(event, callback, options);
+      });
+
+    try {
+      require("../../js/pages/free-study-session");
+
+      if (initialize) {
+        await initialize();
+      }
+    } finally {
+      addEventListenerSpy.mockRestore();
+    }
+
+    await waitForAsync();
   }
 
-  require("../js/free-study-session");
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should not execute when the user is not authenticated", async () => {
+    await loadFreeStudySessionPage([], "1", true, false);
+
+    expect(window.MemorizezSession.requireAuthentication).toHaveBeenCalled();
+
+    expect(apiRequest).not.toHaveBeenCalled();
+  });
 
   it("should not execute when the content container does not exist", async () => {
     await loadFreeStudySessionPage([], "1", false);
@@ -78,7 +128,6 @@ describe("Free Study Session", () => {
     ]);
 
     expect(apiRequest).toHaveBeenCalledTimes(1);
-
     expect(apiRequest).toHaveBeenCalledWith("/free-study/collections");
 
     expect(
@@ -128,6 +177,36 @@ describe("Free Study Session", () => {
     ).toBe("Revelar verso");
   });
 
+  it("should configure the progress bar accessibility attributes", async () => {
+    await loadFreeStudySessionPage([
+      [
+        {
+          id: "1",
+          name: "Java",
+          cardCount: 2,
+        },
+      ],
+      {
+        cardId: "card-1",
+        front: "O que é Java?",
+      },
+    ]);
+
+    const progress = document.querySelector(
+      ".free-study-session-progress-track",
+    );
+
+    expect(progress.getAttribute("role")).toBe("progressbar");
+    expect(progress.getAttribute("aria-label")).toBe("Progresso da coleção");
+    expect(progress.getAttribute("aria-valuemin")).toBe("0");
+    expect(progress.getAttribute("aria-valuemax")).toBe("2");
+    expect(progress.getAttribute("aria-valuenow")).toBe("1");
+
+    expect(
+      document.querySelector(".free-study-session-progress-bar").style.width,
+    ).toBe("50%");
+  });
+
   it("should show an empty message when the collection has no cards", async () => {
     await loadFreeStudySessionPage([
       [
@@ -148,6 +227,26 @@ describe("Free Study Session", () => {
     expect(document.querySelector(".free-study-session-card")).toBeNull();
   });
 
+  it("should display the completion screen when the first card is unavailable", async () => {
+    await loadFreeStudySessionPage([
+      [
+        {
+          id: "1",
+          name: "Java",
+          cardCount: 1,
+        },
+      ],
+      null,
+    ]);
+
+    expect(
+      document.querySelector(".free-study-session-completion-title")
+        .textContent,
+    ).toBe("Coleção concluída!");
+
+    expect(document.querySelector(".free-study-session-card")).toBeNull();
+  });
+
   it("should reveal the card back and display notes", async () => {
     await loadFreeStudySessionPage([
       [
@@ -161,7 +260,6 @@ describe("Free Study Session", () => {
         cardId: "card-1",
         front: "O que é Java?",
       },
-      ,
       {
         back: "Java é uma linguagem de programação.",
         notes: "Criada pela Sun Microsystems.",
@@ -172,7 +270,7 @@ describe("Free Study Session", () => {
 
     revealButton.click();
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitForAsync();
 
     expect(apiRequest).toHaveBeenNthCalledWith(
       3,
@@ -219,7 +317,7 @@ describe("Free Study Session", () => {
 
     revealButton.click();
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitForAsync();
 
     expect(document.querySelector(".free-study-session-back").textContent).toBe(
       "Java é uma linguagem de programação.",
@@ -229,6 +327,101 @@ describe("Free Study Session", () => {
 
     expect(revealButton.textContent).toBe("Próximo cartão");
   });
+
+  it("should show an error when the reveal request returns no response", async () => {
+    await loadFreeStudySessionPage([
+      [
+        {
+          id: "1",
+          name: "Java",
+          cardCount: 2,
+        },
+      ],
+      {
+        cardId: "card-1",
+        front: "O que é Java?",
+      },
+      null,
+    ]);
+
+    const revealButton = document.querySelector(".free-study-session-button");
+
+    revealButton.click();
+
+    await waitForAsync();
+
+    expect(
+      document.querySelector(".free-study-session-error").textContent,
+    ).toBe("Não foi possível revelar o cartão. Tente novamente.");
+
+    expect(revealButton.disabled).toBe(false);
+    expect(revealButton.textContent).toBe("Revelar verso");
+  });
+
+  it("should show an error when revealing the card fails", async () => {
+    await loadFreeStudySessionPage([
+      [
+        {
+          id: "1",
+          name: "Java",
+          cardCount: 2,
+        },
+      ],
+      {
+        cardId: "card-1",
+        front: "O que é Java?",
+      },
+      rejectedResponse(new Error("Server error")),
+    ]);
+
+    const revealButton = document.querySelector(".free-study-session-button");
+
+    revealButton.click();
+
+    await waitForAsync();
+
+    expect(
+      document.querySelector(".free-study-session-error").textContent,
+    ).toBe("Não foi possível revelar o cartão. Tente novamente.");
+
+    expect(revealButton.disabled).toBe(false);
+    expect(revealButton.textContent).toBe("Revelar verso");
+  });
+
+  it.each([401, 403])(
+    "should show the generic error when revealing the card returns status %i",
+    async (status) => {
+      await loadFreeStudySessionPage([
+        [
+          {
+            id: "1",
+            name: "Java",
+            cardCount: 2,
+          },
+        ],
+        {
+          cardId: "card-1",
+          front: "O que é Java?",
+        },
+        rejectedResponse({
+          status,
+        }),
+      ]);
+
+      const revealButton = document.querySelector(".free-study-session-button");
+
+      revealButton.click();
+
+      await waitForAsync();
+
+      expect(
+        document.querySelector(".free-study-session-error").textContent,
+      ).toBe("Não foi possível revelar o cartão. Tente novamente.");
+
+      expect(revealButton.disabled).toBe(false);
+      expect(revealButton.textContent).toBe("Revelar verso");
+    },
+  );
 
   it("should load and render the next card successfully", async () => {
     await loadFreeStudySessionPage([
@@ -255,13 +448,11 @@ describe("Free Study Session", () => {
 
     const button = document.querySelector(".free-study-session-button");
 
-    // Revela o primeiro cartão.
     button.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitForAsync();
 
-    // Avança para o próximo cartão.
     button.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitForAsync();
 
     expect(apiRequest).toHaveBeenNthCalledWith(
       4,
@@ -309,15 +500,13 @@ describe("Free Study Session", () => {
 
     const revealButton = document.querySelector(".free-study-session-button");
 
-    // Revela o cartão.
     revealButton.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitForAsync();
 
-    // Solicita o próximo cartão.
     const nextButton = document.querySelector(".free-study-session-button");
 
     nextButton.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await waitForAsync();
 
     expect(apiRequest).toHaveBeenNthCalledWith(
       4,
@@ -341,7 +530,7 @@ describe("Free Study Session", () => {
     ).toBe("Voltar ao Estudo livre");
   });
 
-  it("should show an error message when revealing the card fails", async () => {
+  it("should show an error when loading the next card fails", async () => {
     await loadFreeStudySessionPage([
       [
         {
@@ -354,57 +543,66 @@ describe("Free Study Session", () => {
         cardId: "card-1",
         front: "O que é Java?",
       },
+      {
+        back: "Java é uma linguagem de programação.",
+      },
+      rejectedResponse(new Error("Server error")),
     ]);
 
-    apiRequest.mockRejectedValueOnce(new Error("Server error"));
+    const button = document.querySelector(".free-study-session-button");
 
-    const revealButton = document.querySelector(".free-study-session-button");
+    button.click();
+    await waitForAsync();
 
-    revealButton.click();
+    button.click();
+    await waitForAsync();
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(apiRequest).toHaveBeenNthCalledWith(
+      4,
+      "/free-study/collections/1/cards/card-1",
+    );
 
     expect(
       document.querySelector(".free-study-session-error").textContent,
-    ).toBe("Não foi possível revelar o cartão. Tente novamente.");
+    ).toBe("Não foi possível carregar o próximo cartão. Tente novamente.");
 
-    expect(revealButton.disabled).toBe(false);
-    expect(revealButton.textContent).toBe("Revelar verso");
+    expect(button.disabled).toBe(false);
+    expect(button.textContent).toBe("Próximo cartão");
   });
 
-  it.each([401, 403])(
-    "should show an authentication error when revealing the card returns %i",
-    async (status) => {
-      await loadFreeStudySessionPage([
-        [
-          {
-            id: "1",
-            name: "Java",
-            cardCount: 2,
-          },
-        ],
-        {
-          cardId: "card-1",
-          front: "O que é Java?",
-        },
-      ]);
+  it("should show an error when loading the collection fails", async () => {
+    await loadFreeStudySessionPage([
+      rejectedResponse(new Error("Server error")),
+    ]);
 
-      apiRequest.mockRejectedValueOnce({
-        status,
-      });
+    expect(apiRequest).toHaveBeenCalledTimes(1);
 
-      const revealButton = document.querySelector(".free-study-session-button");
+    expect(
+      document.querySelector(".free-study-session-error").textContent,
+    ).toBe("Não foi possível carregar a coleção. Tente novamente.");
+  });
 
-      revealButton.click();
+  it("should show the generic error when loading the collection returns status 401", async () => {
+    await loadFreeStudySessionPage([
+      rejectedResponse({
+        status: 401,
+      }),
+    ]);
 
-      await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(
+      document.querySelector(".free-study-session-error").textContent,
+    ).toBe("Não foi possível carregar a coleção. Tente novamente.");
+  });
 
-      expect(
-        document.querySelector(".free-study-session-error").textContent,
-      ).toBe("Sua sessão expirou. Entre novamente para continuar.");
+  it("should show the generic error when loading the collection returns status 403", async () => {
+    await loadFreeStudySessionPage([
+      rejectedResponse({
+        status: 403,
+      }),
+    ]);
 
-      expect(revealButton.disabled).toBe(false);
-      expect(revealButton.textContent).toBe("Revelar verso");
-    },
-  );
+    expect(
+      document.querySelector(".free-study-session-error").textContent,
+    ).toBe("Não foi possível carregar a coleção. Tente novamente.");
+  });
 });

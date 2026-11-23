@@ -1,4 +1,8 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  if (!window.MemorizezSession?.requireAuthentication()) {
+    return;
+  }
+
   const collectionsContainer = document.querySelector(
     "#free-study-collections",
   );
@@ -200,12 +204,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       collectionsContainer.replaceChildren(...collectionCards);
     } catch (error) {
-      const message =
-        error.status === 401 || error.status === 403
-          ? "Sua sessão expirou. Entre novamente para acessar o estudo livre."
-          : "Não foi possível carregar suas coleções. Tente novamente.";
+      console.error("Não foi possível carregar as coleções:", {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
 
-      showMessage(message, "free-study-error-message");
+      showMessage(
+        "Não foi possível carregar suas coleções. Tente novamente.",
+        "free-study-error-message",
+      );
     }
   }
 

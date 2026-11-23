@@ -1,4 +1,8 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  if (!window.MemorizezSession?.requireAuthentication()) {
+    return;
+  }
+
   const contentContainer = document.querySelector(
     "#free-study-session-content",
   );
@@ -195,14 +199,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       revealButton.removeEventListener("click", revealCard);
       revealButton.addEventListener("click", nextCard);
     } catch (error) {
+      console.error("Não foi possível revelar o cartão:", {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
+
       revealButton.disabled = false;
       revealButton.textContent = "Revelar verso";
 
-      showSessionError(
-        error?.status === 401 || error?.status === 403
-          ? "Sua sessão expirou. Entre novamente para continuar."
-          : "Não foi possível revelar o cartão. Tente novamente.",
-      );
+      showSessionError("Não foi possível revelar o cartão. Tente novamente.");
     } finally {
       isLoading = false;
     }
@@ -239,13 +245,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       renderCard();
     } catch (error) {
+      console.error("Não foi possível carregar o próximo cartão:", {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
+
       nextButton.disabled = false;
       nextButton.textContent = "Próximo cartão";
 
       showSessionError(
-        error?.status === 401 || error?.status === 403
-          ? "Sua sessão expirou. Entre novamente para continuar."
-          : "Não foi possível carregar o próximo cartão. Tente novamente.",
+        "Não foi possível carregar o próximo cartão. Tente novamente.",
       );
     } finally {
       isLoading = false;
@@ -334,10 +344,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       renderCard();
     } catch (error) {
+      console.error("Não foi possível iniciar a sessão de estudo livre:", {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
+
       showMessage(
-        error.status === 401 || error.status === 403
-          ? "Sua sessão expirou. Entre novamente para acessar o Estudo livre."
-          : "Não foi possível carregar a coleção. Tente novamente.",
+        "Não foi possível carregar a coleção. Tente novamente.",
         "free-study-session-error",
       );
     }

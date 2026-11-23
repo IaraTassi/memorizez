@@ -1,6 +1,14 @@
 document.addEventListener("DOMContentLoaded", () => {
+  if (!window.MemorizezSession?.requireAuthentication()) {
+    return;
+  }
+
   const cardsContainer = document.getElementById("history-cards-list");
   const collectionNameElement = document.getElementById("pageTitle");
+
+  if (!cardsContainer || !collectionNameElement) {
+    return;
+  }
 
   const params = new URLSearchParams(window.location.search);
   const collectionId = params.get("collectionId");
@@ -175,16 +183,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
       cardsContainer.replaceChildren(fragment);
     } catch (error) {
-      if (error?.status === 401 || error?.status === 403) {
-        showMessage(
-          "Sua sessão expirou. Faça login novamente para consultar o histórico.",
-          "history-cards-error-message",
-        );
-        return;
-      }
+      console.error("Não foi possível carregar os cartões do histórico:", {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
 
       showMessage(
-        "Não foi possível carregar os cartões. Tente novamente.",
+        error?.status === 403
+          ? "Você não tem permissão para consultar estes cartões."
+          : "Não foi possível carregar os cartões. Tente novamente.",
         "history-cards-error-message",
       );
     }
@@ -203,16 +211,18 @@ document.addEventListener("DOMContentLoaded", () => {
       await loadCollectionName();
       await loadCards();
     } catch (error) {
-      if (error?.status === 401 || error?.status === 403) {
-        showMessage(
-          "Sua sessão expirou. Faça login novamente para consultar o histórico.",
-          "history-cards-error-message",
-        );
-        return;
-      }
+      console.error("Não foi possível carregar os dados da coleção:", {
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+        data: error?.data ?? null,
+      });
 
       showMessage(
-        "Não foi possível carregar os dados da coleção.",
+        error?.status === 403
+          ? "Você não tem permissão para consultar esta coleção."
+          : error?.message === "Coleção não encontrada."
+            ? error.message
+            : "Não foi possível carregar os dados da coleção.",
         "history-cards-error-message",
       );
     }

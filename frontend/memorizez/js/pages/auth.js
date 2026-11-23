@@ -281,21 +281,6 @@ function getBackendMessage(error) {
 
 function getRequestInfrastructureErrorMessage(error, operation) {
   switch (error?.code) {
-    case "CSRF_CONNECTION_ERROR":
-      return "Não foi possível validar a segurança da solicitação. Verifique sua conexão e tente novamente.";
-
-    case "INVALID_CSRF_TOKEN":
-      return "Não foi possível validar a segurança da solicitação. Atualize a página e tente novamente.";
-
-    case "CSRF_ERROR":
-      return (
-        getBackendMessage(error) ||
-        "Não foi possível validar a segurança da solicitação. Atualize a página e tente novamente."
-      );
-
-    case "CSRF_TIMEOUT_ERROR":
-      return "A validação de segurança demorou mais que o esperado. Tente novamente.";
-
     case "TIMEOUT_ERROR":
       return `A solicitação de ${operation} demorou mais que o esperado. Verifique se a operação foi concluída antes de tentar novamente.`;
 
@@ -508,7 +493,7 @@ if (loginForm) {
     setSubmitting(loginForm, true, "Entrando...");
 
     try {
-      await apiRequest("/users/login", {
+      const response = await apiRequest("/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -518,6 +503,16 @@ if (loginForm) {
           password: password.value,
         }),
       });
+
+      if (typeof response?.token !== "string" || !response.token.trim()) {
+        throw new Error("O servidor não retornou um token de autenticação.");
+      }
+
+      if (typeof window.MemorizezAuth?.saveToken !== "function") {
+        throw new Error("O serviço de autenticação não está disponível.");
+      }
+
+      window.MemorizezAuth.saveToken(response.token);
 
       clearStoredProfileName();
 
