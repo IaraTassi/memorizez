@@ -25,10 +25,29 @@ A API do MEMORIZEZ está publicada em:
 
 - Java 21
 - Spring Boot 4
+- Spring Security
+- OAuth2 Resource Server / JWT
 - Maven
 - PostgreSQL 16
 - Docker
 - SpringDoc / OpenAPI
+
+## 🔐 Autenticação JWT
+
+A API utiliza autenticação baseada em **JSON Web Token (JWT)**, com configuração stateless por meio do Spring Security.
+
+O fluxo de autenticação funciona da seguinte forma:
+
+1. O usuário envia suas credenciais para o endpoint de login (`POST /users/login`).
+2. O backend valida as credenciais e retorna um token JWT.
+3. O frontend armazena o token durante a sessão de navegação.
+4. Nas requisições aos endpoints protegidos, o frontend envia o token no cabeçalho `Authorization`, utilizando o formato `Bearer`.
+5. O backend valida o token antes de permitir o acesso aos recursos protegidos.
+6. Ao sair da aplicação, o frontend remove o token armazenado.
+
+A chave utilizada para assinatura dos tokens é configurada por meio da variável de ambiente `JWT_SECRET`.
+
+> 🔒 A chave JWT deve ser mantida em ambiente seguro e nunca deve ser publicada no repositório ou compartilhada. Não utilize valores reais de credenciais em arquivos de configuração versionados.
 
 ## 🧪 Ferramentas de desenvolvimento e testes
 
@@ -94,7 +113,9 @@ docker compose down
 
 ## ⚙️ Executar o backend
 
-Na pasta `backend/memorizez`, execute:
+Na pasta `backend/memorizez`, configure as variáveis de ambiente exigidas pela aplicação, incluindo as credenciais do banco de dados e a chave `JWT_SECRET`.
+
+Em seguida, execute:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
@@ -106,17 +127,13 @@ Para compilar o projeto:
 .\mvnw.cmd clean compile
 ```
 
-> 🔐 Configure as variáveis de ambiente exigidas pela aplicação antes de iniciar o backend. Não publique senhas, tokens ou arquivos `.env` com credenciais reais.
+> 🔐 Não publique senhas, tokens, chaves de assinatura ou arquivos `.env` com credenciais reais.
 
 ## ☕ Testes do Backend — JUnit 5 e Mockito
 
 O backend utiliza **JUnit 5** para executar testes automatizados e **Mockito** para simular dependências, permitindo verificar o comportamento dos componentes de forma isolada.
 
-Entre os testes existentes estão:
-
-- Carregamento do contexto da aplicação Spring Boot.
-- Carregamento dos dados de usuário pelo e-mail.
-- Tratamento de usuários não encontrados.
+A suíte contempla testes relacionados aos componentes e serviços da aplicação, incluindo autenticação, usuários e funcionalidades de estudo.
 
 ### Executar todos os testes
 
@@ -206,16 +223,20 @@ Esse comando preserva o volume do banco. Para remover também os dados persistid
 
 ## 📖 Documentação da API
 
-A API possui documentação interativa e uma coleção de requisições no Postman:
+A API possui documentação interativa pelo Swagger UI e uma coleção de requisições no Postman:
 
-- 🔎 [Swagger UI — MemorizeZ](https://memorizez.onrender.com/swagger-ui/index.html)
-- 🌐 [Postman — API MemorizeZ](https://documenter.getpostman.com/view/26225227/2sBYHbsbpQ)
+- 🔎 [Swagger UI — MEMORIZEZ](https://memorizez.onrender.com/swagger-ui/index.html)
+- 🌐 [Postman — API MEMORIZEZ](https://documenter.getpostman.com/view/26225227/2sBYHbsbpQ)
+
+> 📝 A documentação do Swagger e a coleção do Postman estão passando por ajustes em razão das alterações realizadas na integração da autenticação JWT. Serão atualizadas após a conclusão e validação dessa integração.
 
 ## 💗 Observações de desenvolvimento
 
 - O banco PostgreSQL local é executado pelo Docker Compose.
 - O ambiente E2E utiliza banco de dados e portas separados do ambiente de desenvolvimento.
-- Não compartilhe credenciais, cookies de sessão ou tokens CSRF.
+- A autenticação da API utiliza tokens JWT enviados no cabeçalho `Authorization`.
+- Mantenha a chave `JWT_SECRET` e as credenciais do banco de dados protegidas.
+- Não compartilhe tokens de autenticação.
 - Preserve os volumes do Docker quando precisar manter os dados locais.
 
 ---
