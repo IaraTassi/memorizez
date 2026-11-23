@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@SecurityRequirement(name = "sessionAuth")
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/reviews")
 @Tag(name = "Review", description = "Endpoints para revisões programadas, permitindo avaliar o conhecimento, registrar respostas e acompanhar o progresso do usuário.")

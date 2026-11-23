@@ -8,7 +8,6 @@ import com.memorizez.memorizez.collection.repository.CollectionRepository;
 import com.memorizez.memorizez.history.History;
 import com.memorizez.memorizez.history.repository.HistoryRepository;
 import com.memorizez.memorizez.review.Review;
-import com.memorizez.memorizez.review.ReviewSession;
 import com.memorizez.memorizez.review.ReviewStage;
 import com.memorizez.memorizez.review.dto.ReviewCollectionResponse;
 import com.memorizez.memorizez.review.dto.ReviewResponse;
@@ -17,9 +16,7 @@ import com.memorizez.memorizez.review.repository.ReviewRepository;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
-import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.security.core.Authentication;
 
 import java.time.LocalDate;
@@ -43,7 +40,6 @@ public class ReviewSelectionServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -100,8 +96,7 @@ public class ReviewSelectionServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         List<ReviewResponse> response =
@@ -143,7 +138,6 @@ public class ReviewSelectionServiceTest {
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -157,8 +151,7 @@ public class ReviewSelectionServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         assertThrows(
@@ -181,7 +174,6 @@ public class ReviewSelectionServiceTest {
         CardRepository cardRepository = mock(CardRepository.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
         Authentication authentication = mock(Authentication.class);
 
         User user = new User(
@@ -231,8 +223,7 @@ public class ReviewSelectionServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         ReviewResponse response =
@@ -240,21 +231,6 @@ public class ReviewSelectionServiceTest {
                         collectionId,
                         authentication
                 );
-
-        ArgumentCaptor<ReviewSession> sessionCaptor =
-                ArgumentCaptor.forClass(ReviewSession.class);
-
-        verify(httpSession)
-                .setAttribute(
-                        eq("memorizezReviewSession"),
-                        sessionCaptor.capture()
-                );
-
-        ReviewSession session = sessionCaptor.getValue();
-
-        assertEquals(collectionId, session.getCollectionId());
-        assertEquals(List.of(card1.getId(), card2.getId()), session.getCardIds());
-        assertEquals(0, session.getCurrentIndex());
 
         assertEquals(
                 card1.getId(),
@@ -304,7 +280,6 @@ public class ReviewSelectionServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -338,8 +313,7 @@ public class ReviewSelectionServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         assertThrows(
@@ -349,9 +323,6 @@ public class ReviewSelectionServiceTest {
                         authentication
                 )
         );
-
-        verify(httpSession, never())
-                .setAttribute(anyString(), any());
 
         verify(reviewRepository, never())
                 .findByCard(any(Card.class));
@@ -369,7 +340,6 @@ public class ReviewSelectionServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
         Authentication authentication = mock(Authentication.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -383,8 +353,7 @@ public class ReviewSelectionServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         assertThrows(
@@ -402,8 +371,7 @@ public class ReviewSelectionServiceTest {
                 collectionRepository,
                 cardRepository,
                 reviewRepository,
-                historyRepository,
-                httpSession
+                historyRepository
         );
     }
 
@@ -416,7 +384,6 @@ public class ReviewSelectionServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
         Authentication authentication = mock(Authentication.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -441,8 +408,7 @@ public class ReviewSelectionServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         assertThrows(
@@ -465,8 +431,7 @@ public class ReviewSelectionServiceTest {
         verifyNoInteractions(
                 cardRepository,
                 reviewRepository,
-                historyRepository,
-                httpSession
+                historyRepository
         );
     }
 
@@ -479,7 +444,6 @@ public class ReviewSelectionServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -523,8 +487,7 @@ public class ReviewSelectionServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         List<ReviewCollectionResponse> response =
@@ -575,8 +538,7 @@ public class ReviewSelectionServiceTest {
 
         verifyNoInteractions(
                 reviewRepository,
-                historyRepository,
-                httpSession
+                historyRepository
         );
     }
 
@@ -588,7 +550,6 @@ public class ReviewSelectionServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -611,8 +572,7 @@ public class ReviewSelectionServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         List<ReviewCollectionResponse> response =
@@ -629,8 +589,7 @@ public class ReviewSelectionServiceTest {
         verifyNoInteractions(
                 cardRepository,
                 reviewRepository,
-                historyRepository,
-                httpSession
+                historyRepository
         );
     }
 
@@ -643,7 +602,6 @@ public class ReviewSelectionServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -675,8 +633,7 @@ public class ReviewSelectionServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         List<ReviewCollectionResponse> response =
@@ -711,8 +668,7 @@ public class ReviewSelectionServiceTest {
 
         verifyNoInteractions(
                 reviewRepository,
-                historyRepository,
-                httpSession
+                historyRepository
         );
     }
 
@@ -725,7 +681,6 @@ public class ReviewSelectionServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -740,8 +695,7 @@ public class ReviewSelectionServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         assertThrows(
@@ -763,8 +717,7 @@ public class ReviewSelectionServiceTest {
 
         verifyNoInteractions(
                 reviewRepository,
-                historyRepository,
-                httpSession
+                historyRepository
         );
     }
 

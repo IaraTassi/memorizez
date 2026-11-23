@@ -9,7 +9,6 @@ import com.memorizez.memorizez.collection.repository.CollectionRepository;
 import com.memorizez.memorizez.history.History;
 import com.memorizez.memorizez.history.repository.HistoryRepository;
 import com.memorizez.memorizez.review.Review;
-import com.memorizez.memorizez.review.ReviewSession;
 import com.memorizez.memorizez.review.ReviewStage;
 import com.memorizez.memorizez.review.dto.ReviewResponse;
 import com.memorizez.memorizez.review.exception.CardNotAvailableForReviewException;
@@ -17,13 +16,11 @@ import com.memorizez.memorizez.review.repository.ReviewRepository;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
-import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.core.Authentication;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,7 +42,6 @@ public class ReviewRevealServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -65,15 +61,6 @@ public class ReviewRevealServiceTest {
 
         String collectionId = "collection-1";
         String cardId = "card-1";
-
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId)
-                );
-
-        when(httpSession.getAttribute("memorizezReviewSession"))
-                .thenReturn(reviewSession);
 
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
@@ -96,8 +83,7 @@ public class ReviewRevealServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         ReviewResponse response =
@@ -137,7 +123,6 @@ public class ReviewRevealServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -164,15 +149,6 @@ public class ReviewRevealServiceTest {
         review.setNextReviewDate(LocalDate.now());
         review.setRevealedAt(null);
 
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId)
-                );
-
-        when(httpSession.getAttribute("memorizezReviewSession"))
-                .thenReturn(reviewSession);
-
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
 
@@ -194,8 +170,7 @@ public class ReviewRevealServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         ReviewResponse response =
@@ -245,94 +220,6 @@ public class ReviewRevealServiceTest {
     }
 
     @Test
-    void shouldThrowExceptionWhenCardIsNotCurrentCardInReviewSession() {
-        UserRepository userRepository = mock(UserRepository.class);
-        CollectionRepository collectionRepository = mock(CollectionRepository.class);
-        CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
-        Authentication authentication = mock(Authentication.class);
-        HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
-
-        User user = new User(
-                "Test User",
-                "test@memorizez.com",
-                "hashed-password"
-        );
-
-        Collection collection = new Collection();
-        collection.setName("Inglês");
-        collection.setUser(user);
-
-        String collectionId = "collection-1";
-        String currentCardId = "card-1";
-        String requestedCardId = "card-2";
-
-        Card card = new Card();
-        card.setFront("What is inheritance?");
-        card.setBack("O que é herança");
-        card.setNotes("Inheritance allows reuse.");
-        card.setCollection(collection);
-
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(currentCardId, requestedCardId)
-                );
-
-        when(httpSession.getAttribute("memorizezReviewSession"))
-                .thenReturn(reviewSession);
-
-        when(authentication.getName())
-                .thenReturn("test@memorizez.com");
-
-        when(userRepository.findByEmail("test@memorizez.com"))
-                .thenReturn(Optional.of(user));
-
-        when(collectionRepository.findByIdAndUser(collectionId, user))
-                .thenReturn(Optional.of(collection));
-
-        when(cardRepository.findByIdAndCollection(
-                requestedCardId,
-                collection
-        )).thenReturn(Optional.of(card));
-
-        ReviewService service =
-                new ReviewService(
-                        reviewRepository,
-                        cardRepository,
-                        collectionRepository,
-                        userRepository,
-                        historyRepository,
-                        httpSession
-                );
-
-        assertThrows(
-                CardNotAvailableForReviewException.class,
-                () -> service.reveal(
-                        collectionId,
-                        requestedCardId,
-                        authentication
-                )
-        );
-
-        verify(cardRepository)
-                .findByIdAndCollection(
-                        requestedCardId,
-                        collection
-                );
-
-        verify(reviewRepository, never())
-                .findByCard(any(Card.class));
-
-        verify(reviewRepository, never())
-                .save(any(Review.class));
-
-        verify(historyRepository, never())
-                .save(any(History.class));
-    }
-
-    @Test
     void shouldThrowExceptionWhenCardIsNotAvailableForReview() {
         UserRepository userRepository = mock(UserRepository.class);
         CollectionRepository collectionRepository = mock(CollectionRepository.class);
@@ -340,7 +227,6 @@ public class ReviewRevealServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -367,15 +253,6 @@ public class ReviewRevealServiceTest {
         review.setNextReviewDate(LocalDate.now().plusDays(7));
         review.setRevealedAt(null);
 
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId)
-                );
-
-        when(httpSession.getAttribute("memorizezReviewSession"))
-                .thenReturn(reviewSession);
-
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
 
@@ -397,8 +274,7 @@ public class ReviewRevealServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         assertThrows(
@@ -426,7 +302,6 @@ public class ReviewRevealServiceTest {
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -443,8 +318,7 @@ public class ReviewRevealServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         assertThrows(
@@ -472,7 +346,6 @@ public class ReviewRevealServiceTest {
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -498,8 +371,7 @@ public class ReviewRevealServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         assertThrows(
@@ -530,7 +402,6 @@ public class ReviewRevealServiceTest {
         Authentication authentication = mock(Authentication.class);
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -563,8 +434,7 @@ public class ReviewRevealServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         assertThrows(

@@ -11,23 +11,20 @@ import com.memorizez.memorizez.history.HistoryAction;
 import com.memorizez.memorizez.history.repository.HistoryRepository;
 import com.memorizez.memorizez.review.Review;
 import com.memorizez.memorizez.review.ReviewResult;
-import com.memorizez.memorizez.review.ReviewSession;
 import com.memorizez.memorizez.review.ReviewStage;
 import com.memorizez.memorizez.review.dto.ReviewResultRequest;
 import com.memorizez.memorizez.review.dto.ReviewResultResponse;
-import com.memorizez.memorizez.review.exception.CardNotAvailableForReviewException;
 import com.memorizez.memorizez.review.exception.CardNotRevealedException;
 import com.memorizez.memorizez.review.repository.ReviewRepository;
+import com.memorizez.memorizez.time.AppTime;
 import com.memorizez.memorizez.user.User;
 import com.memorizez.memorizez.user.exception.UserNotFoundException;
 import com.memorizez.memorizez.user.repository.UserRepository;
-import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.core.Authentication;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,7 +42,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -68,15 +64,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewResultRequest request = new ReviewResultRequest();
         request.setResult(ReviewResult.REMEMBERED);
 
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId)
-                );
-
-        when(httpSession.getAttribute("memorizezReviewSession"))
-                .thenReturn(reviewSession);
-
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
 
@@ -98,8 +85,7 @@ public class ReviewSubmitResultServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         assertThrows(
@@ -111,9 +97,6 @@ public class ReviewSubmitResultServiceTest {
                         authentication
                 )
         );
-
-        verify(httpSession)
-                .getAttribute("memorizezReviewSession");
 
         verify(cardRepository)
                 .findByIdAndCollection(
@@ -143,7 +126,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -172,15 +154,6 @@ public class ReviewSubmitResultServiceTest {
         String collectionId = "collection-1";
         String cardId = "card-1";
 
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId)
-                );
-
-        when(httpSession.getAttribute("memorizezReviewSession"))
-                .thenReturn(reviewSession);
-
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
 
@@ -202,8 +175,7 @@ public class ReviewSubmitResultServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         assertThrows(
@@ -215,9 +187,6 @@ public class ReviewSubmitResultServiceTest {
                         authentication
                 )
         );
-
-        verify(httpSession)
-                .getAttribute("memorizezReviewSession");
 
         verify(cardRepository)
                 .findByIdAndCollection(
@@ -247,7 +216,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -261,7 +229,6 @@ public class ReviewSubmitResultServiceTest {
 
         String collectionId = "collection-1";
         String cardId = "card-1";
-        String nextCardId = "card-2";
 
         Card card = new Card();
         card.setFront("What is encapsulation?");
@@ -269,34 +236,20 @@ public class ReviewSubmitResultServiceTest {
         card.setNotes("Princípio da POO.");
         card.setCollection(collection);
 
+        Card nextCard = mock(Card.class);
+
+        when(nextCard.getId()).thenReturn("card-2");
+        when(nextCard.getFront()).thenReturn("What is inheritance?");
+        when(nextCard.getCollection()).thenReturn(collection);
+
         Review review = new Review();
         review.setCard(card);
         review.setStage(null);
         review.setNextReviewDate(null);
-        review.setRevealedAt(LocalDateTime.now());
-
-        Card nextCard = mock(Card.class);
-
-        when(nextCard.getId())
-                .thenReturn(nextCardId);
-
-        when(nextCard.getFront())
-                .thenReturn("What is inheritance?");
-
-        when(nextCard.getCollection())
-                .thenReturn(collection);
+        review.setRevealedAt(AppTime.now());
 
         ReviewResultRequest request = new ReviewResultRequest();
         request.setResult(ReviewResult.REMEMBERED);
-
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId, nextCardId)
-                );
-
-        when(httpSession.getAttribute("memorizezReviewSession"))
-                .thenReturn(reviewSession);
 
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
@@ -313,35 +266,33 @@ public class ReviewSubmitResultServiceTest {
         when(reviewRepository.findByCard(card))
                 .thenReturn(Optional.of(review));
 
-        when(cardRepository.findByIdAndCollection(nextCardId, collection))
-                .thenReturn(Optional.of(nextCard));
+        when(cardRepository.findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
+        )).thenReturn(List.of(nextCard));
 
         when(reviewRepository.findByCard(nextCard))
                 .thenReturn(Optional.empty());
 
-        ReviewService service =
-                new ReviewService(
-                        reviewRepository,
-                        cardRepository,
-                        collectionRepository,
-                        userRepository,
-                        historyRepository,
-                        httpSession
-                );
+        ReviewService service = new ReviewService(
+                reviewRepository,
+                cardRepository,
+                collectionRepository,
+                userRepository,
+                historyRepository
+        );
 
-        ReviewResultResponse response =
-                service.submitResult(
-                        collectionId,
-                        cardId,
-                        request,
-                        authentication
-                );
+        ReviewResultResponse response = service.submitResult(
+                collectionId,
+                cardId,
+                request,
+                authentication
+        );
 
         ArgumentCaptor<History> historyCaptor =
                 ArgumentCaptor.forClass(History.class);
 
-        verify(historyRepository)
-                .save(historyCaptor.capture());
+        verify(historyRepository).save(historyCaptor.capture());
 
         History savedHistory = historyCaptor.getValue();
 
@@ -353,22 +304,14 @@ public class ReviewSubmitResultServiceTest {
         assertEquals(1, card.getRememberedCount());
         assertEquals(0, card.getNotRememberedCount());
 
-        assertEquals(
-                ReviewStage.ONE_DAY,
-                review.getStage()
-        );
+        assertEquals(ReviewStage.ONE_DAY, review.getStage());
 
         assertEquals(
-                LocalDate.now().plusDays(1),
+                AppTime.today().plusDays(1),
                 review.getNextReviewDate()
         );
 
         assertNull(review.getRevealedAt());
-
-        assertEquals(
-                1,
-                reviewSession.getCurrentIndex()
-        );
 
         assertFalse(response.isCompleted());
         assertNotNull(response.getNextCard());
@@ -385,40 +328,17 @@ public class ReviewSubmitResultServiceTest {
 
         assertNull(response.getNextCard().getBack());
         assertNull(response.getNextCard().getNotes());
-        assertNotNull(response.getProgress());
+        assertNull(response.getProgress());
 
-        assertEquals(
-                1,
-                response.getProgress().getCompletedCards()
+        verify(reviewRepository).save(review);
+        verify(cardRepository).save(card);
+
+        verify(cardRepository).findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
         );
 
-        assertEquals(
-                2,
-                response.getProgress().getTotalCards()
-        );
-
-        assertEquals(
-                50,
-                response.getProgress().getPercentage()
-        );
-
-        verify(httpSession)
-                .getAttribute("memorizezReviewSession");
-
-        verify(reviewRepository)
-                .save(review);
-
-        verify(cardRepository)
-                .save(card);
-
-        verify(cardRepository)
-                .findByIdAndCollection(
-                        nextCardId,
-                        collection
-                );
-
-        verify(reviewRepository)
-                .findByCard(nextCard);
+        verify(reviewRepository).findByCard(nextCard);
     }
 
     @Test
@@ -430,7 +350,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -444,7 +363,6 @@ public class ReviewSubmitResultServiceTest {
 
         String collectionId = "collection-1";
         String cardId = "card-1";
-        String nextCardId = "card-2";
 
         Card card = new Card();
         card.setFront("What is encapsulation?");
@@ -456,30 +374,16 @@ public class ReviewSubmitResultServiceTest {
         review.setCard(card);
         review.setStage(null);
         review.setNextReviewDate(null);
-        review.setRevealedAt(LocalDateTime.now());
+        review.setRevealedAt(AppTime.now());
 
         Card nextCard = mock(Card.class);
 
-        when(nextCard.getId())
-                .thenReturn(nextCardId);
-
-        when(nextCard.getFront())
-                .thenReturn("What is inheritance?");
-
-        when(nextCard.getCollection())
-                .thenReturn(collection);
+        when(nextCard.getId()).thenReturn("card-2");
+        when(nextCard.getFront()).thenReturn("What is inheritance?");
+        when(nextCard.getCollection()).thenReturn(collection);
 
         ReviewResultRequest request = new ReviewResultRequest();
         request.setResult(ReviewResult.NOT_REMEMBERED);
-
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId, nextCardId)
-                );
-
-        when(httpSession.getAttribute("memorizezReviewSession"))
-                .thenReturn(reviewSession);
 
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
@@ -496,35 +400,33 @@ public class ReviewSubmitResultServiceTest {
         when(reviewRepository.findByCard(card))
                 .thenReturn(Optional.of(review));
 
-        when(cardRepository.findByIdAndCollection(nextCardId, collection))
-                .thenReturn(Optional.of(nextCard));
+        when(cardRepository.findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
+        )).thenReturn(List.of(nextCard));
 
         when(reviewRepository.findByCard(nextCard))
                 .thenReturn(Optional.empty());
 
-        ReviewService service =
-                new ReviewService(
-                        reviewRepository,
-                        cardRepository,
-                        collectionRepository,
-                        userRepository,
-                        historyRepository,
-                        httpSession
-                );
+        ReviewService service = new ReviewService(
+                reviewRepository,
+                cardRepository,
+                collectionRepository,
+                userRepository,
+                historyRepository
+        );
 
-        ReviewResultResponse response =
-                service.submitResult(
-                        collectionId,
-                        cardId,
-                        request,
-                        authentication
-                );
+        ReviewResultResponse response = service.submitResult(
+                collectionId,
+                cardId,
+                request,
+                authentication
+        );
 
         ArgumentCaptor<History> historyCaptor =
                 ArgumentCaptor.forClass(History.class);
 
-        verify(historyRepository)
-                .save(historyCaptor.capture());
+        verify(historyRepository).save(historyCaptor.capture());
 
         History savedHistory = historyCaptor.getValue();
 
@@ -536,22 +438,14 @@ public class ReviewSubmitResultServiceTest {
         assertEquals(0, card.getRememberedCount());
         assertEquals(1, card.getNotRememberedCount());
 
-        assertEquals(
-                ReviewStage.ONE_DAY,
-                review.getStage()
-        );
+        assertEquals(ReviewStage.ONE_DAY, review.getStage());
 
         assertEquals(
-                LocalDate.now().plusDays(1),
+                AppTime.today().plusDays(1),
                 review.getNextReviewDate()
         );
 
         assertNull(review.getRevealedAt());
-
-        assertEquals(
-                1,
-                reviewSession.getCurrentIndex()
-        );
 
         assertFalse(response.isCompleted());
         assertNotNull(response.getNextCard());
@@ -568,43 +462,17 @@ public class ReviewSubmitResultServiceTest {
 
         assertNull(response.getNextCard().getBack());
         assertNull(response.getNextCard().getNotes());
+        assertNull(response.getProgress());
 
-        assertNotNull(
-                response.getProgress()
+        verify(reviewRepository).save(review);
+        verify(cardRepository).save(card);
+
+        verify(cardRepository).findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
         );
 
-        assertEquals(
-                1,
-                response.getProgress().getCompletedCards()
-        );
-
-        assertEquals(
-                2,
-                response.getProgress().getTotalCards()
-        );
-
-        assertEquals(
-                50,
-                response.getProgress().getPercentage()
-        );
-
-        verify(httpSession)
-                .getAttribute("memorizezReviewSession");
-
-        verify(reviewRepository)
-                .save(review);
-
-        verify(cardRepository)
-                .save(card);
-
-        verify(cardRepository)
-                .findByIdAndCollection(
-                        nextCardId,
-                        collection
-                );
-
-        verify(reviewRepository)
-                .findByCard(nextCard);
+        verify(reviewRepository).findByCard(nextCard);
     }
 
     @Test
@@ -616,7 +484,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -630,7 +497,6 @@ public class ReviewSubmitResultServiceTest {
 
         String collectionId = "collection-1";
         String cardId = "card-1";
-        String nextCardId = "card-2";
 
         Card card = new Card();
         card.setFront("What is encapsulation?");
@@ -641,31 +507,17 @@ public class ReviewSubmitResultServiceTest {
         Review review = new Review();
         review.setCard(card);
         review.setStage(ReviewStage.ONE_DAY);
-        review.setNextReviewDate(LocalDate.now().plusDays(1));
-        review.setRevealedAt(LocalDateTime.now());
+        review.setNextReviewDate(AppTime.today().plusDays(1));
+        review.setRevealedAt(AppTime.now());
 
         Card nextCard = mock(Card.class);
 
-        when(nextCard.getId())
-                .thenReturn(nextCardId);
-
-        when(nextCard.getFront())
-                .thenReturn("What is inheritance?");
-
-        when(nextCard.getCollection())
-                .thenReturn(collection);
+        when(nextCard.getId()).thenReturn("card-2");
+        when(nextCard.getFront()).thenReturn("What is inheritance?");
+        when(nextCard.getCollection()).thenReturn(collection);
 
         ReviewResultRequest request = new ReviewResultRequest();
         request.setResult(ReviewResult.REMEMBERED);
-
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId, nextCardId)
-                );
-
-        when(httpSession.getAttribute("memorizezReviewSession"))
-                .thenReturn(reviewSession);
 
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
@@ -682,49 +534,40 @@ public class ReviewSubmitResultServiceTest {
         when(reviewRepository.findByCard(card))
                 .thenReturn(Optional.of(review));
 
-        when(cardRepository.findByIdAndCollection(nextCardId, collection))
-                .thenReturn(Optional.of(nextCard));
+        when(cardRepository.findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
+        )).thenReturn(List.of(nextCard));
 
         when(reviewRepository.findByCard(nextCard))
                 .thenReturn(Optional.empty());
 
-        ReviewService service =
-                new ReviewService(
-                        reviewRepository,
-                        cardRepository,
-                        collectionRepository,
-                        userRepository,
-                        historyRepository,
-                        httpSession
-                );
+        ReviewService service = new ReviewService(
+                reviewRepository,
+                cardRepository,
+                collectionRepository,
+                userRepository,
+                historyRepository
+        );
 
-        ReviewResultResponse response =
-                service.submitResult(
-                        collectionId,
-                        cardId,
-                        request,
-                        authentication
-                );
+        ReviewResultResponse response = service.submitResult(
+                collectionId,
+                cardId,
+                request,
+                authentication
+        );
 
         assertEquals(1, card.getRememberedCount());
         assertEquals(0, card.getNotRememberedCount());
 
-        assertEquals(
-                ReviewStage.SEVEN_DAYS,
-                review.getStage()
-        );
+        assertEquals(ReviewStage.SEVEN_DAYS, review.getStage());
 
         assertEquals(
-                LocalDate.now().plusDays(7),
+                AppTime.today().plusDays(7),
                 review.getNextReviewDate()
         );
 
         assertNull(review.getRevealedAt());
-
-        assertEquals(
-                1,
-                reviewSession.getCurrentIndex()
-        );
 
         assertFalse(response.isCompleted());
         assertNotNull(response.getNextCard());
@@ -741,47 +584,18 @@ public class ReviewSubmitResultServiceTest {
 
         assertNull(response.getNextCard().getBack());
         assertNull(response.getNextCard().getNotes());
+        assertNull(response.getProgress());
 
-        assertNotNull(
-                response.getProgress()
+        verify(reviewRepository).save(review);
+        verify(cardRepository).save(card);
+        verify(historyRepository).save(any(History.class));
+
+        verify(cardRepository).findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
         );
 
-        assertEquals(
-                1,
-                response.getProgress().getCompletedCards()
-        );
-
-        assertEquals(
-                2,
-                response.getProgress().getTotalCards()
-        );
-
-        assertEquals(
-                50,
-                response.getProgress().getPercentage()
-        );
-
-        verify(httpSession)
-                .getAttribute("memorizezReviewSession");
-
-        verify(reviewRepository)
-                .save(review);
-
-        verify(cardRepository)
-                .save(card);
-
-        verify(historyRepository)
-                .save(any(History.class));
-
-        verify(cardRepository)
-                .findByIdAndCollection(
-                        nextCardId,
-                        collection
-                );
-
-        verify(reviewRepository)
-                .findByCard(nextCard);
-
+        verify(reviewRepository).findByCard(nextCard);
     }
 
     @Test
@@ -793,7 +607,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -807,7 +620,6 @@ public class ReviewSubmitResultServiceTest {
 
         String collectionId = "collection-1";
         String cardId = "card-1";
-        String nextCardId = "card-2";
 
         Card card = new Card();
         card.setFront("What is encapsulation?");
@@ -818,31 +630,17 @@ public class ReviewSubmitResultServiceTest {
         Review review = new Review();
         review.setCard(card);
         review.setStage(ReviewStage.SEVEN_DAYS);
-        review.setNextReviewDate(LocalDate.now().plusDays(1));
-        review.setRevealedAt(LocalDateTime.now());
+        review.setNextReviewDate(AppTime.today().plusDays(1));
+        review.setRevealedAt(AppTime.now());
 
         Card nextCard = mock(Card.class);
 
-        when(nextCard.getId())
-                .thenReturn(nextCardId);
-
-        when(nextCard.getFront())
-                .thenReturn("What is inheritance?");
-
-        when(nextCard.getCollection())
-                .thenReturn(collection);
+        when(nextCard.getId()).thenReturn("card-2");
+        when(nextCard.getFront()).thenReturn("What is inheritance?");
+        when(nextCard.getCollection()).thenReturn(collection);
 
         ReviewResultRequest request = new ReviewResultRequest();
         request.setResult(ReviewResult.REMEMBERED);
-
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId, nextCardId)
-                );
-
-        when(httpSession.getAttribute("memorizezReviewSession"))
-                .thenReturn(reviewSession);
 
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
@@ -859,49 +657,40 @@ public class ReviewSubmitResultServiceTest {
         when(reviewRepository.findByCard(card))
                 .thenReturn(Optional.of(review));
 
-        when(cardRepository.findByIdAndCollection(nextCardId, collection))
-                .thenReturn(Optional.of(nextCard));
+        when(cardRepository.findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
+        )).thenReturn(List.of(nextCard));
 
         when(reviewRepository.findByCard(nextCard))
                 .thenReturn(Optional.empty());
 
-        ReviewService service =
-                new ReviewService(
-                        reviewRepository,
-                        cardRepository,
-                        collectionRepository,
-                        userRepository,
-                        historyRepository,
-                        httpSession
-                );
+        ReviewService service = new ReviewService(
+                reviewRepository,
+                cardRepository,
+                collectionRepository,
+                userRepository,
+                historyRepository
+        );
 
-        ReviewResultResponse response =
-                service.submitResult(
-                        collectionId,
-                        cardId,
-                        request,
-                        authentication
-                );
+        ReviewResultResponse response = service.submitResult(
+                collectionId,
+                cardId,
+                request,
+                authentication
+        );
 
         assertEquals(1, card.getRememberedCount());
         assertEquals(0, card.getNotRememberedCount());
 
-        assertEquals(
-                ReviewStage.FIFTEEN_DAYS,
-                review.getStage()
-        );
+        assertEquals(ReviewStage.FIFTEEN_DAYS, review.getStage());
 
         assertEquals(
-                LocalDate.now().plusDays(15),
+                AppTime.today().plusDays(15),
                 review.getNextReviewDate()
         );
 
         assertNull(review.getRevealedAt());
-
-        assertEquals(
-                1,
-                reviewSession.getCurrentIndex()
-        );
 
         assertFalse(response.isCompleted());
         assertNotNull(response.getNextCard());
@@ -916,49 +705,20 @@ public class ReviewSubmitResultServiceTest {
                 response.getNextCard().getFront()
         );
 
-
         assertNull(response.getNextCard().getBack());
         assertNull(response.getNextCard().getNotes());
+        assertNull(response.getProgress());
 
-        assertNotNull(
-                response.getProgress()
+        verify(reviewRepository).save(review);
+        verify(cardRepository).save(card);
+        verify(historyRepository).save(any(History.class));
+
+        verify(cardRepository).findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
         );
 
-        assertEquals(
-                1,
-                response.getProgress().getCompletedCards()
-        );
-
-        assertEquals(
-                2,
-                response.getProgress().getTotalCards()
-        );
-
-        assertEquals(
-                50,
-                response.getProgress().getPercentage()
-        );
-
-        verify(httpSession)
-                .getAttribute("memorizezReviewSession");
-
-        verify(reviewRepository)
-                .save(review);
-
-        verify(cardRepository)
-                .save(card);
-
-        verify(historyRepository)
-                .save(any(History.class));
-
-        verify(cardRepository)
-                .findByIdAndCollection(
-                        nextCardId,
-                        collection
-                );
-
-        verify(reviewRepository)
-                .findByCard(nextCard);
+        verify(reviewRepository).findByCard(nextCard);
     }
 
     @Test
@@ -970,7 +730,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -984,7 +743,6 @@ public class ReviewSubmitResultServiceTest {
 
         String collectionId = "collection-1";
         String cardId = "card-1";
-        String nextCardId = "card-2";
 
         Card card = new Card();
         card.setFront("What is encapsulation?");
@@ -995,32 +753,17 @@ public class ReviewSubmitResultServiceTest {
         Review review = new Review();
         review.setCard(card);
         review.setStage(ReviewStage.FIFTEEN_DAYS);
-        review.setNextReviewDate(LocalDate.now().plusDays(1));
-        review.setRevealedAt(LocalDateTime.now());
+        review.setNextReviewDate(AppTime.today().plusDays(1));
+        review.setRevealedAt(AppTime.now());
 
         Card nextCard = mock(Card.class);
 
-        when(nextCard.getId())
-                .thenReturn(nextCardId);
-
-        when(nextCard.getFront())
-                .thenReturn("What is inheritance?");
-
-        when(nextCard.getCollection())
-                .thenReturn(collection);
+        when(nextCard.getId()).thenReturn("card-2");
+        when(nextCard.getFront()).thenReturn("What is inheritance?");
+        when(nextCard.getCollection()).thenReturn(collection);
 
         ReviewResultRequest request = new ReviewResultRequest();
         request.setResult(ReviewResult.REMEMBERED);
-
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId, nextCardId)
-                );
-
-        when(httpSession.getAttribute(
-                "memorizezReviewSession"
-        )).thenReturn(reviewSession);
 
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
@@ -1037,49 +780,40 @@ public class ReviewSubmitResultServiceTest {
         when(reviewRepository.findByCard(card))
                 .thenReturn(Optional.of(review));
 
-        when(cardRepository.findByIdAndCollection(nextCardId, collection))
-                .thenReturn(Optional.of(nextCard));
+        when(cardRepository.findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
+        )).thenReturn(List.of(nextCard));
 
         when(reviewRepository.findByCard(nextCard))
                 .thenReturn(Optional.empty());
 
-        ReviewService service =
-                new ReviewService(
-                        reviewRepository,
-                        cardRepository,
-                        collectionRepository,
-                        userRepository,
-                        historyRepository,
-                        httpSession
-                );
+        ReviewService service = new ReviewService(
+                reviewRepository,
+                cardRepository,
+                collectionRepository,
+                userRepository,
+                historyRepository
+        );
 
-        ReviewResultResponse response =
-                service.submitResult(
-                        collectionId,
-                        cardId,
-                        request,
-                        authentication
-                );
+        ReviewResultResponse response = service.submitResult(
+                collectionId,
+                cardId,
+                request,
+                authentication
+        );
 
         assertEquals(1, card.getRememberedCount());
         assertEquals(0, card.getNotRememberedCount());
 
-        assertEquals(
-                ReviewStage.THIRTY_DAYS,
-                review.getStage()
-        );
+        assertEquals(ReviewStage.THIRTY_DAYS, review.getStage());
 
         assertEquals(
-                LocalDate.now().plusDays(30),
+                AppTime.today().plusDays(30),
                 review.getNextReviewDate()
         );
 
         assertNull(review.getRevealedAt());
-
-        assertEquals(
-                1,
-                reviewSession.getCurrentIndex()
-        );
 
         assertFalse(response.isCompleted());
         assertNotNull(response.getNextCard());
@@ -1096,46 +830,18 @@ public class ReviewSubmitResultServiceTest {
 
         assertNull(response.getNextCard().getBack());
         assertNull(response.getNextCard().getNotes());
+        assertNull(response.getProgress());
 
-        assertNotNull(
-                response.getProgress()
+        verify(reviewRepository).save(review);
+        verify(cardRepository).save(card);
+        verify(historyRepository).save(any(History.class));
+
+        verify(cardRepository).findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
         );
 
-        assertEquals(
-                1,
-                response.getProgress().getCompletedCards()
-        );
-
-        assertEquals(
-                2,
-                response.getProgress().getTotalCards()
-        );
-
-        assertEquals(
-                50,
-                response.getProgress().getPercentage()
-        );
-
-        verify(httpSession)
-                .getAttribute("memorizezReviewSession");
-
-        verify(reviewRepository)
-                .save(review);
-
-        verify(cardRepository)
-                .save(card);
-
-        verify(historyRepository)
-                .save(any(History.class));
-
-        verify(cardRepository)
-                .findByIdAndCollection(
-                        nextCardId,
-                        collection
-                );
-
-        verify(reviewRepository)
-                .findByCard(nextCard);
+        verify(reviewRepository).findByCard(nextCard);
     }
 
     @Test
@@ -1147,7 +853,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -1161,7 +866,6 @@ public class ReviewSubmitResultServiceTest {
 
         String collectionId = "collection-1";
         String cardId = "card-1";
-        String nextCardId = "card-2";
 
         Card card = new Card();
         card.setFront("What is encapsulation?");
@@ -1172,32 +876,17 @@ public class ReviewSubmitResultServiceTest {
         Review review = new Review();
         review.setCard(card);
         review.setStage(ReviewStage.THIRTY_DAYS);
-        review.setNextReviewDate(LocalDate.now().plusDays(1));
-        review.setRevealedAt(LocalDateTime.now());
+        review.setNextReviewDate(AppTime.today().plusDays(1));
+        review.setRevealedAt(AppTime.now());
 
         ReviewResultRequest request = new ReviewResultRequest();
         request.setResult(ReviewResult.REMEMBERED);
 
         Card nextCard = mock(Card.class);
 
-        when(nextCard.getId())
-                .thenReturn(nextCardId);
-
-        when(nextCard.getFront())
-                .thenReturn("What is inheritance?");
-
-        when(nextCard.getCollection())
-                .thenReturn(collection);
-
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId, nextCardId)
-                );
-
-        when(httpSession.getAttribute(
-                "memorizezReviewSession"
-        )).thenReturn(reviewSession);
+        when(nextCard.getId()).thenReturn("card-2");
+        when(nextCard.getFront()).thenReturn("What is inheritance?");
+        when(nextCard.getCollection()).thenReturn(collection);
 
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
@@ -1214,49 +903,40 @@ public class ReviewSubmitResultServiceTest {
         when(reviewRepository.findByCard(card))
                 .thenReturn(Optional.of(review));
 
-        when(cardRepository.findByIdAndCollection(nextCardId, collection))
-                .thenReturn(Optional.of(nextCard));
+        when(cardRepository.findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
+        )).thenReturn(List.of(nextCard));
 
         when(reviewRepository.findByCard(nextCard))
                 .thenReturn(Optional.empty());
 
-        ReviewService service =
-                new ReviewService(
-                        reviewRepository,
-                        cardRepository,
-                        collectionRepository,
-                        userRepository,
-                        historyRepository,
-                        httpSession
-                );
+        ReviewService service = new ReviewService(
+                reviewRepository,
+                cardRepository,
+                collectionRepository,
+                userRepository,
+                historyRepository
+        );
 
-        ReviewResultResponse response =
-                service.submitResult(
-                        collectionId,
-                        cardId,
-                        request,
-                        authentication
-                );
+        ReviewResultResponse response = service.submitResult(
+                collectionId,
+                cardId,
+                request,
+                authentication
+        );
 
         assertEquals(1, card.getRememberedCount());
         assertEquals(0, card.getNotRememberedCount());
 
-        assertEquals(
-                ReviewStage.THIRTY_DAYS,
-                review.getStage()
-        );
+        assertEquals(ReviewStage.THIRTY_DAYS, review.getStage());
 
         assertEquals(
-                LocalDate.now().plusDays(30),
+                AppTime.today().plusDays(30),
                 review.getNextReviewDate()
         );
 
         assertNull(review.getRevealedAt());
-
-        assertEquals(
-                1,
-                reviewSession.getCurrentIndex()
-        );
 
         assertFalse(response.isCompleted());
         assertNotNull(response.getNextCard());
@@ -1273,48 +953,18 @@ public class ReviewSubmitResultServiceTest {
 
         assertNull(response.getNextCard().getBack());
         assertNull(response.getNextCard().getNotes());
+        assertNull(response.getProgress());
 
-        assertNotNull(
-                response.getProgress()
+        verify(reviewRepository).save(review);
+        verify(cardRepository).save(card);
+        verify(historyRepository).save(any(History.class));
+
+        verify(cardRepository).findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
         );
 
-        assertEquals(
-                1,
-                response.getProgress().getCompletedCards()
-        );
-
-        assertEquals(
-                2,
-                response.getProgress().getTotalCards()
-        );
-
-        assertEquals(
-                50,
-                response.getProgress().getPercentage()
-        );
-
-        verify(httpSession)
-                .getAttribute("memorizezReviewSession");
-
-        verify(reviewRepository)
-                .save(review);
-
-        verify(cardRepository)
-                .save(card);
-
-
-        verify(historyRepository)
-                .save(any(History.class));
-
-        verify(cardRepository)
-                .findByIdAndCollection(
-                        nextCardId,
-                        collection
-                );
-
-        verify(reviewRepository)
-                .findByCard(nextCard);
-
+        verify(reviewRepository).findByCard(nextCard);
     }
 
     @Test
@@ -1326,7 +976,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -1340,7 +989,6 @@ public class ReviewSubmitResultServiceTest {
 
         String collectionId = "collection-1";
         String cardId = "card-1";
-        String nextCardId = "card-2";
 
         Card card = new Card();
         card.setFront("What is encapsulation?");
@@ -1351,32 +999,17 @@ public class ReviewSubmitResultServiceTest {
         Review review = new Review();
         review.setCard(card);
         review.setStage(ReviewStage.FIFTEEN_DAYS);
-        review.setNextReviewDate(LocalDate.now().plusDays(15));
-        review.setRevealedAt(LocalDateTime.now());
+        review.setNextReviewDate(AppTime.today().plusDays(15));
+        review.setRevealedAt(AppTime.now());
 
         Card nextCard = mock(Card.class);
 
-        when(nextCard.getId())
-                .thenReturn(nextCardId);
-
-        when(nextCard.getFront())
-                .thenReturn("What is inheritance?");
-
-        when(nextCard.getCollection())
-                .thenReturn(collection);
+        when(nextCard.getId()).thenReturn("card-2");
+        when(nextCard.getFront()).thenReturn("What is inheritance?");
+        when(nextCard.getCollection()).thenReturn(collection);
 
         ReviewResultRequest request = new ReviewResultRequest();
         request.setResult(ReviewResult.NOT_REMEMBERED);
-
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId, nextCardId)
-                );
-
-        when(httpSession.getAttribute(
-                "memorizezReviewSession"
-        )).thenReturn(reviewSession);
 
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
@@ -1393,35 +1026,33 @@ public class ReviewSubmitResultServiceTest {
         when(reviewRepository.findByCard(card))
                 .thenReturn(Optional.of(review));
 
-        when(cardRepository.findByIdAndCollection(nextCardId, collection))
-                .thenReturn(Optional.of(nextCard));
+        when(cardRepository.findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
+        )).thenReturn(List.of(nextCard));
 
         when(reviewRepository.findByCard(nextCard))
                 .thenReturn(Optional.empty());
 
-        ReviewService service =
-                new ReviewService(
-                        reviewRepository,
-                        cardRepository,
-                        collectionRepository,
-                        userRepository,
-                        historyRepository,
-                        httpSession
-                );
+        ReviewService service = new ReviewService(
+                reviewRepository,
+                cardRepository,
+                collectionRepository,
+                userRepository,
+                historyRepository
+        );
 
-        ReviewResultResponse response =
-                service.submitResult(
-                        collectionId,
-                        cardId,
-                        request,
-                        authentication
-                );
+        ReviewResultResponse response = service.submitResult(
+                collectionId,
+                cardId,
+                request,
+                authentication
+        );
 
         ArgumentCaptor<History> historyCaptor =
                 ArgumentCaptor.forClass(History.class);
 
-        verify(historyRepository)
-                .save(historyCaptor.capture());
+        verify(historyRepository).save(historyCaptor.capture());
 
         History savedHistory = historyCaptor.getValue();
 
@@ -1433,22 +1064,14 @@ public class ReviewSubmitResultServiceTest {
         assertEquals(0, card.getRememberedCount());
         assertEquals(1, card.getNotRememberedCount());
 
-        assertEquals(
-                ReviewStage.ONE_DAY,
-                review.getStage()
-        );
+        assertEquals(ReviewStage.ONE_DAY, review.getStage());
 
         assertEquals(
-                LocalDate.now().plusDays(1),
+                AppTime.today().plusDays(1),
                 review.getNextReviewDate()
         );
 
         assertNull(review.getRevealedAt());
-
-        assertEquals(
-                1,
-                reviewSession.getCurrentIndex()
-        );
 
         assertFalse(response.isCompleted());
         assertNotNull(response.getNextCard());
@@ -1465,48 +1088,17 @@ public class ReviewSubmitResultServiceTest {
 
         assertNull(response.getNextCard().getBack());
         assertNull(response.getNextCard().getNotes());
+        assertNull(response.getProgress());
 
-        assertNotNull(
-                response.getProgress()
+        verify(reviewRepository).save(review);
+        verify(cardRepository).save(card);
+
+        verify(cardRepository).findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
         );
 
-        assertEquals(
-                1,
-                response.getProgress().getCompletedCards()
-        );
-
-        assertEquals(
-                2,
-                response.getProgress().getTotalCards()
-        );
-
-        assertEquals(
-                50,
-                response.getProgress().getPercentage()
-        );
-
-        verify(httpSession)
-                .getAttribute(
-                        "memorizezReviewSession"
-                );
-
-        verify(reviewRepository)
-                .save(review);
-
-        verify(cardRepository)
-                .save(card);
-
-        verify(cardRepository)
-                .findByIdAndCollection(
-                        nextCardId,
-                        collection
-                );
-
-        verify(reviewRepository)
-                .findByCard(nextCard);
-
-        verify(historyRepository)
-                .save(any(History.class));
+        verify(reviewRepository).findByCard(nextCard);
     }
 
     @Test
@@ -1518,7 +1110,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         Authentication authentication = mock(Authentication.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -1542,21 +1133,11 @@ public class ReviewSubmitResultServiceTest {
         Review review = new Review();
         review.setCard(card);
         review.setStage(ReviewStage.SEVEN_DAYS);
-        review.setNextReviewDate(LocalDate.now());
-        review.setRevealedAt(LocalDateTime.now());
+        review.setNextReviewDate(AppTime.today());
+        review.setRevealedAt(AppTime.now());
 
         ReviewResultRequest request = new ReviewResultRequest();
         request.setResult(ReviewResult.REMEMBERED);
-
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        collectionId,
-                        List.of(cardId)
-                );
-
-        when(httpSession.getAttribute(
-                "memorizezReviewSession"
-        )).thenReturn(reviewSession);
 
         when(authentication.getName())
                 .thenReturn("test@memorizez.com");
@@ -1573,29 +1154,30 @@ public class ReviewSubmitResultServiceTest {
         when(reviewRepository.findByCard(card))
                 .thenReturn(Optional.of(review));
 
-        ReviewService service =
-                new ReviewService(
-                        reviewRepository,
-                        cardRepository,
-                        collectionRepository,
-                        userRepository,
-                        historyRepository,
-                        httpSession
-                );
+        when(cardRepository.findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
+        )).thenReturn(List.of());
 
-        ReviewResultResponse response =
-                service.submitResult(
-                        collectionId,
-                        cardId,
-                        request,
-                        authentication
-                );
+        ReviewService service = new ReviewService(
+                reviewRepository,
+                cardRepository,
+                collectionRepository,
+                userRepository,
+                historyRepository
+        );
+
+        ReviewResultResponse response = service.submitResult(
+                collectionId,
+                cardId,
+                request,
+                authentication
+        );
 
         ArgumentCaptor<History> historyCaptor =
                 ArgumentCaptor.forClass(History.class);
 
-        verify(historyRepository)
-                .save(historyCaptor.capture());
+        verify(historyRepository).save(historyCaptor.capture());
 
         History savedHistory = historyCaptor.getValue();
 
@@ -1605,74 +1187,28 @@ public class ReviewSubmitResultServiceTest {
         );
 
         assertEquals(1, card.getRememberedCount());
-
         assertEquals(0, card.getNotRememberedCount());
 
-        assertEquals(
-                ReviewStage.FIFTEEN_DAYS,
-                review.getStage()
-        );
+        assertEquals(ReviewStage.FIFTEEN_DAYS, review.getStage());
 
         assertEquals(
-                LocalDate.now().plusDays(15),
+                AppTime.today().plusDays(15),
                 review.getNextReviewDate()
         );
 
         assertNull(review.getRevealedAt());
 
-        assertEquals(
-                1,
-                reviewSession.getCurrentIndex()
+        assertTrue(response.isCompleted());
+        assertNull(response.getNextCard());
+        assertNull(response.getProgress());
+
+        verify(reviewRepository).save(review);
+        verify(cardRepository).save(card);
+
+        verify(cardRepository).findAvailableForReviewByCollection(
+                collection,
+                AppTime.today()
         );
-
-        assertTrue(
-                response.isCompleted()
-        );
-
-        assertNull(
-                response.getNextCard()
-        );
-
-        assertNotNull(
-                response.getProgress()
-        );
-
-        assertEquals(
-                1,
-                response.getProgress().getCompletedCards()
-        );
-
-        assertEquals(
-                1,
-                response.getProgress().getTotalCards()
-        );
-
-        assertEquals(
-                100,
-                response.getProgress().getPercentage()
-        );
-
-        verify(httpSession)
-                .getAttribute(
-                        "memorizezReviewSession"
-                );
-
-        verify(httpSession)
-                .removeAttribute(
-                        "memorizezReviewSession"
-                );
-
-        verify(reviewRepository)
-                .save(review);
-
-        verify(cardRepository)
-                .save(card);
-
-        verify(cardRepository)
-                .findByIdAndCollection(
-                        cardId,
-                        collection
-                );
     }
 
     @Test
@@ -1684,7 +1220,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
         Authentication authentication = mock(Authentication.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         when(authentication.getName())
                 .thenReturn("unknown@memorizez.com");
@@ -1698,8 +1233,7 @@ public class ReviewSubmitResultServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         ReviewResultRequest request =
@@ -1724,8 +1258,7 @@ public class ReviewSubmitResultServiceTest {
                 collectionRepository,
                 cardRepository,
                 reviewRepository,
-                historyRepository,
-                httpSession
+                historyRepository
         );
     }
 
@@ -1738,7 +1271,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
         Authentication authentication = mock(Authentication.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -1768,8 +1300,7 @@ public class ReviewSubmitResultServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
 
         assertThrows(
@@ -1794,93 +1325,6 @@ public class ReviewSubmitResultServiceTest {
         verifyNoInteractions(
                 cardRepository,
                 reviewRepository,
-                historyRepository,
-                httpSession
-        );
-    }
-
-    @Test
-    void shouldThrowExceptionWhenCardIsNotCurrentCardInSubmitResult() {
-
-        UserRepository userRepository = mock(UserRepository.class);
-        CollectionRepository collectionRepository = mock(CollectionRepository.class);
-        CardRepository cardRepository = mock(CardRepository.class);
-        ReviewRepository reviewRepository = mock(ReviewRepository.class);
-        HistoryRepository historyRepository = mock(HistoryRepository.class);
-        Authentication authentication = mock(Authentication.class);
-        HttpSession httpSession = mock(HttpSession.class);
-
-        User user = new User(
-                "Test User",
-                "test@memorizez.com",
-                "hashed-password"
-        );
-
-        Collection collection = mock(Collection.class);
-
-        when(authentication.getName())
-                .thenReturn("test@memorizez.com");
-
-        when(userRepository.findByEmail("test@memorizez.com"))
-                .thenReturn(Optional.of(user));
-
-        when(collection.getId())
-                .thenReturn("collection-1");
-
-        when(collectionRepository.findByIdAndUser(
-                "collection-1",
-                user
-        )).thenReturn(Optional.of(collection));
-
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        "collection-1",
-                        List.of("card-2")
-                );
-
-        when(httpSession.getAttribute("memorizezReviewSession"))
-                .thenReturn(reviewSession);
-
-        ReviewResultRequest request =
-                new ReviewResultRequest();
-
-        request.setResult(ReviewResult.REMEMBERED);
-
-        ReviewService service =
-                new ReviewService(
-                        reviewRepository,
-                        cardRepository,
-                        collectionRepository,
-                        userRepository,
-                        historyRepository,
-                        httpSession
-                );
-
-        assertThrows(
-                CardNotAvailableForReviewException.class,
-                () -> service.submitResult(
-                        "collection-1",
-                        "card-1",
-                        request,
-                        authentication
-                )
-        );
-
-        verify(userRepository)
-                .findByEmail("test@memorizez.com");
-
-        verify(collectionRepository)
-                .findByIdAndUser(
-                        "collection-1",
-                        user
-                );
-
-        verify(httpSession)
-                .getAttribute("memorizezReviewSession");
-
-        verifyNoInteractions(
-                cardRepository,
-                reviewRepository,
                 historyRepository
         );
     }
@@ -1894,7 +1338,6 @@ public class ReviewSubmitResultServiceTest {
         ReviewRepository reviewRepository = mock(ReviewRepository.class);
         HistoryRepository historyRepository = mock(HistoryRepository.class);
         Authentication authentication = mock(Authentication.class);
-        HttpSession httpSession = mock(HttpSession.class);
 
         User user = new User(
                 "Test User",
@@ -1929,18 +1372,8 @@ public class ReviewSubmitResultServiceTest {
                         cardRepository,
                         collectionRepository,
                         userRepository,
-                        historyRepository,
-                        httpSession
+                        historyRepository
                 );
-
-        ReviewSession reviewSession =
-                new ReviewSession(
-                        "collection-1",
-                        List.of("card-1")
-                );
-
-        when(httpSession.getAttribute("memorizezReviewSession"))
-                .thenReturn(reviewSession);
 
         when(cardRepository.findByIdAndCollection(
                 "card-1",
@@ -1966,9 +1399,6 @@ public class ReviewSubmitResultServiceTest {
                         user
                 );
 
-        verify(httpSession)
-                .getAttribute("memorizezReviewSession");
-
         verify(cardRepository)
                 .findByIdAndCollection(
                         "card-1",
@@ -1976,8 +1406,7 @@ public class ReviewSubmitResultServiceTest {
                 );
 
         verifyNoInteractions(
-                reviewRepository,
-                historyRepository
+                reviewRepository
         );
     }
 

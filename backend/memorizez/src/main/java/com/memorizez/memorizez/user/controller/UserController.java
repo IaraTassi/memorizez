@@ -85,7 +85,7 @@ public class UserController {
     }
 
     @DeleteMapping
-    @SecurityRequirement(name = "sessionAuth")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Excluir conta do usuário",
             description = "Exclui a conta do usuário autenticado."
@@ -102,7 +102,7 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    @SecurityRequirement(name = "sessionAuth")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Consultar usuário autenticado",
             description = "Retorna os dados básicos do usuário autenticado."

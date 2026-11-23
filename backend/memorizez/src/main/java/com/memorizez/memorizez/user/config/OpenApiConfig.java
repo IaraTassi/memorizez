@@ -1,6 +1,5 @@
 package com.memorizez.memorizez.user.config;
 
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,11 +20,11 @@ import java.nio.charset.StandardCharsets;
 
 @Configuration
 @SecurityScheme(
-        name = "sessionAuth",
-        type = SecuritySchemeType.APIKEY,
-        in = SecuritySchemeIn.COOKIE,
-        paramName = "JSESSIONID",
-        description = "Autenticação por sessão HTTP"
+        name = "bearerAuth",
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT",
+        description = "Autenticação por token JWT"
 )
 public class OpenApiConfig {
 

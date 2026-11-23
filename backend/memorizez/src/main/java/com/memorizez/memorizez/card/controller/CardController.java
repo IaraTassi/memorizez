@@ -17,7 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-@SecurityRequirement(name = "sessionAuth")
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/collections/{collectionId}/cards")
 @Tag(name = "Cards", description = "Endpoints para gerenciamento de cartões de estudo, incluindo criação, listagem, atualização e exclusão dentro de uma coleção.")

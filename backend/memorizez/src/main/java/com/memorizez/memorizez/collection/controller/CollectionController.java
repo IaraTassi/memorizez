@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@SecurityRequirement(name = "sessionAuth")
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/collections")
 @Tag(name = "Collections", description = "Endpoints para gerenciamento de coleções, incluindo criação, listagem, atualização e exclusão.")

@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@SecurityRequirement(name = "sessionAuth")
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/free-study")
 @Tag(name = "Free Study", description = "Endpoints para estudo livre dos cartões de uma coleção, sem interferir nos registros de revisão programada.")

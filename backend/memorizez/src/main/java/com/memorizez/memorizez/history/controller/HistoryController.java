@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@SecurityRequirement(name = "sessionAuth")
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("/history")
 @Tag(name = "History", description = "Endpoints para consulta do histórico de revisões programadas, permitindo acompanhar o desempenho e identificar lacunas no aprendizado.")
